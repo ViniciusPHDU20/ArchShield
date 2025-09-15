@@ -1,8 +1,6 @@
 #!/bin/bash
 
-# Script atualizado do ArchShield - Agora com desbloqueio de IPs e identificação detalhada
-# Criado para dominar o tráfego de rede com informações completas sobre cada IP
-# Rode com sudo.
+
 
 set -e
 
