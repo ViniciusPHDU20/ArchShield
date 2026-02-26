@@ -400,6 +400,7 @@ class NetworkTrafficAnalyzer:
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
+            # FIX: SQL Injection prevent (use parameterized query)
             cursor.execute(
                 "SELECT country, city, isp, org, country_code, threat FROM ip_info WHERE ip = ?", 
                 (ip,)
@@ -425,6 +426,7 @@ class NetworkTrafficAnalyzer:
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
+            # FIX: SQL Injection prevent (use parameterized query)
             cursor.execute('''
                 INSERT OR REPLACE INTO ip_info 
                 (ip, country, city, isp, org, country_code, threat, last_updated)
