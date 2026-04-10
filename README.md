@@ -1,42 +1,67 @@
-# Projeto ArchShield
+# 🛡️ ArchShield: Advanced Network Security Dashboard
 
-Este projeto é um monitor de tráfego de rede com detecção de anomalias e funcionalidade de bloqueio de IP, desenvolvido para Arch Linux.
+**ArchShield** is a high-performance network monitoring and anomaly detection system specifically architected for **Arch Linux**. It provides real-time traffic analysis, automated threat mitigation via `iptables`, and a responsive web-based command center.
 
-## Estrutura do Projeto
+[![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
+[![Arch Linux](https://img.shields.io/badge/Arch-Linux-blue.svg)](https://archlinux.org/)
+[![Python](https://img.shields.io/badge/Python-3.x-yellow.svg)](https://www.python.org/)
 
-- `no_gui_archshield.py`: O script principal em Python que realiza a análise de tráfego, detecção de anomalias e interage com o `iptables` para bloqueio de IPs. Ele também contém um servidor Flask para o dashboard web.
-- `install_archshield.sh`: Script de instalação inicial do ArchShield, responsável por instalar as dependências necessárias via `pacman`, copiar o script principal para `/usr/bin/archshield`, configurar o arquivo de configuração `/etc/archshield.conf`, criar o serviço `systemd` e configurar o dashboard web.
-- `centralize_archshield_logs.sh`: Script para centralizar os logs do ArchShield.
-- `collect_archshield_logs.sh`: Script para coletar os logs do ArchShield.
-- `PKGBUILD`: Arquivo para construção de pacotes no Arch Linux.
-- `script.sh`: Este script automatiza a atualização do `index.html` e do `no_gui_archshield.py`, além de reiniciar o serviço do ArchShield. Ele também cria backups dos arquivos antes de modificá-los.
+## 🚀 Key Capabilities
 
-## Alterações Recentes (via `script.sh`)
+- **Real-Time Traffic Analysis**: Deep packet inspection (DPI) and traffic monitoring to identify potential threats in real-time.
+- **Anomaly Detection Engine**: Intelligent heuristics to detect port scanning, DDoS attempts, and unusual connection patterns.
+- **Automated Mitigation**: Instant IP blocking via native `iptables` integration when threats are identified.
+- **Interactive Dashboard**: A Flask-powered web interface for visualizing active connections, traffic graphs, and manual firewall control.
+- **Systemd Integration**: Operates as a background daemon for persistent protection from boot.
 
-O script `script.sh` foi fornecido pelo usuário para automatizar as seguintes modificações:
+## 🧰 Tech Stack
 
-1.  **Atualização do `index.html`:**
-    -   Adição de uma tabela para exibir IPs ativos em tempo real.
-    -   Implementação de funcionalidade de clique direito para bloquear IPs diretamente do dashboard.
-    -   Ajustes no gráfico de tráfego para melhor visualização.
+| Component | Technology |
+| :--- | :--- |
+| **Backend** | Python 3 |
+| **Web Interface** | Flask, HTML5, CSS3, JS |
+| **Firewall Control** | `iptables` / `ebtables` |
+| **System Daemon** | Systemd |
+| **Data Visualization** | Chart.js / Real-time Tables |
 
-2.  **Atualização do `no_gui_archshield.py`:**
-    -   Adição de uma nova rota `/block_ip` no servidor Flask para permitir o bloqueio manual de IPs via dashboard.
-    -   Implementação de uma thread para monitorar conexões ativas (`monitor_active_connections`).
-    -   Ajustes na lógica de detecção de anomalias e processamento de pacotes.
-    -   Correção de um erro de sintaxe anterior.
+## 🛠 Installation & Deployment
 
-## Como Usar o `script.sh`
+ArchShield is designed to be easily deployed on Arch Linux systems.
 
-Para aplicar as atualizações no projeto, execute o `script.sh` com privilégios de root:
+### Quick Install
 
-```bash
-sudo ./script.sh
-```
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/ViniciusPHDU20/ArchShield.git
+   cd ArchShield
+   ```
+2. Execute the deployment script as root:
+   ```bash
+   sudo ./install_archshield.sh
+   ```
 
-Este script fará backup dos arquivos existentes, aplicará as novas versões do `index.html` e `no_gui_archshield.py`, e reiniciará o serviço do ArchShield.
+The script will:
+- Install all necessary dependencies via `pacman`.
+- Configure `/etc/archshield.conf`.
+- Deploy the systemd service.
+- Start the web dashboard.
 
-## Próximos Passos
+## 📊 Dashboard Access
 
-Qualquer modificação futura no projeto deve ser encapsulada em um script similar ao `script.sh` para garantir a automação, rastreabilidade e facilidade de aplicação das alterações.
+Once the service is active, the dashboard can be accessed at:
+`http://localhost:5000` (or your configured port).
 
+From the dashboard, you can:
+- Monitor live throughput.
+- View and manage active IP connections.
+- Manually block/unblock IPs with a single click.
+
+## ⚙️ Project Structure
+
+- `no_gui_archshield.py`: The core detection and server engine.
+- `install_archshield.sh`: Complete system installer.
+- `centralize_archshield_logs.sh`: Distributed logging utility.
+- `PKGBUILD`: Native Arch Linux package build script.
+
+---
+*Developed by **ViniciusPHDU20***
