@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>ArchShield - Sovereign Command</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root { --primary: #7800ff; --danger: #ef4444; --success: #10b981; --bg: #050505; --card: #0d0d0d; }
+        body { background-color: var(--bg); color: #e0e0e0; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        .neon-border { border: 1px solid var(--primary); box-shadow: 0 0 10px rgba(120, 0, 255, 0.3); }
+        .neon-text { color: #9d33ff; text-shadow: 0 0 8px rgba(157, 51, 255, 0.5); }
+        .ip-card { background: var(--card); border: 1px solid #1a1a1a; transition: all 0.3s; cursor: pointer; }
+        .ip-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+        .ip-card.blocked { border-left: 4px solid var(--danger); }
+        .ip-card.active { border-left: 4px solid var(--success); }
+        
+        #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .auth-box { background: #111; padding: 40px; border: 1px solid var(--primary); text-align: center; border-radius: 8px; box-shadow: 0 0 20px var(--primary); }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+    <div id="auth-overlay">
+        <div class="auth-box" id="login-box">
+            <h2 class="neon-text text-2xl font-black mb-6 uppercase">Restricted Access</h2>
+            <input type="password" id="admin-pass" placeholder="MASTER KEY" class="w-full bg-black border border-zinc-800 p-3 text-white mb-4 outline-none focus:border-purple-500">
+            <button onclick="login()" class="w-full bg-purple-700 text-white p-3 font-bold hover:bg-purple-600 transition">ENTER VAULT</button>
+        </div>
+        <div class="auth-box" id="setup-box" style="display:none;">
+            <h2 class="text-green-500 text-2xl font-black mb-2 uppercase">Initial Setup</h2>
+            <p class="text-zinc-400 text-xs mb-6">Create your master credentials.</p>
+            <input type="text" id="setup-user" placeholder="USERNAME" class="w-full bg-black border border-zinc-800 p-3 text-white mb-4 outline-none focus:border-green-500">
+            <input type="password" id="setup-pass" placeholder="MASTER KEY" class="w-full bg-black border border-zinc-800 p-3 text-white mb-4 outline-none focus:border-green-500">
+            <button onclick="performSetup()" class="w-full bg-green-700 text-white p-3 font-bold hover:bg-green-600 transition">INITIALIZE SHIELD</button>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto" id="dashboard-content" style="display:none;">
+        <header class="flex flex-col md:flex-row justify-between items-center mb-10 border-b border-purple-900/50 pb-6">
+            <div>
+                <h1 class="text-4xl font-black neon-text tracking-tighter uppercase">ArchShield <span class="text-white text-base font-light">PRO v2.0.3</span></h1>
+                <p class="text-zinc-500 text-xs mt-1 font-mono uppercase">Guardian Link Active</p>
+            </div>
+            <div class="flex gap-4">
+                <div id="ai-badge" class="bg-zinc-900 border border-yellow-600 text-yellow-500 px-4 py-2 rounded text-xs font-bold uppercase">IA: Aprendendo</div>
+                <button onclick="logout()" class="bg-zinc-800 text-zinc-400 px-4 py-2 rounded text-xs hover:bg-zinc-700 font-bold uppercase">Terminate</button>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10 text-center">
+            <div class="bg-zinc-900/50 p-4 border border-zinc-800">
+                <p class="text-zinc-500 text-[10px] font-bold mb-1">PACOTES</p>
+                <h2 id="stats-packets" class="text-3xl font-black text-white">0</h2>
+            </div>
+            <div class="bg-zinc-900/50 p-4 border border-zinc-800">
+                <p class="text-zinc-500 text-[10px] font-bold mb-1">BLOQUEIOS</p>
+                <h2 id="stats-blocked" class="text-3xl font-black text-red-500">0</h2>
+            </div>
+            <div class="bg-zinc-900/50 p-4 border border-zinc-800">
+                <p class="text-zinc-500 text-[10px] font-bold mb-1">ATIVOS</p>
+                <h2 id="stats-active" class="text-3xl font-black text-green-500">0</h2>
+            </div>
+            <div class="bg-zinc-900/50 p-4 border border-zinc-800">
+                <p class="text-zinc-500 text-[10px] font-bold mb-1">ANOMALIAS</p>
+                <h2 id="stats-anomalies" class="text-3xl font-black text-purple-500">0</h2>
+            </div>
+        </div>
+
+        <div class="bg-zinc-900/30 p-4 border border-zinc-800 mb-10">
+            <canvas id="trafficChart" height="80"></canvas>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            <div>
+                <h3 class="text-sm font-bold mb-4 uppercase text-red-600 tracking-widest">Digital Purgatory</h3>
+                <div id="blocked-list" class="space-y-3 max-h-[500px] overflow-y-auto"></div>
+            </div>
+            <div>
+                <h3 class="text-sm font-bold mb-4 uppercase text-green-600 tracking-widest">Active Radar</h3>
+                <div id="active-list" class="space-y-3 max-h-[500px] overflow-y-auto"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chart;
+        let token = localStorage.getItem('shield_token');
+
+        async function checkSetup() {
+            try {
+                const r = await fetch('/check_setup');
+                const data = await r.json();
+                if(data.setup_required) {
+                    document.getElementById('login-box').style.display = 'none';
+                    document.getElementById('setup-box').style.display = 'block';
+                    document.getElementById('setup-box').style.borderColor = '#10b981';
+                } else if(token) {
+                    showDashboard();
+                }
+            } catch(e) {}
+        }
+        checkSetup();
+
+        async function performSetup() {
+            const u = document.getElementById('setup-user').value;
+            const p = document.getElementById('setup-pass').value;
+            try {
+                const r = await fetch('/setup', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({user: u, pass: p})
+                });
+                const data = await r.json();
+                if(data.success) {
+                    localStorage.setItem('shield_token', data.token);
+                    alert("Shield initialized successfully.");
+                    location.reload();
+                }
+            } catch(e) { alert("Setup failed."); }
+        }
+
+        async function login() {
+            const pass = document.getElementById('admin-pass').value;
+            try {
+                const r = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({user: 'admin', pass: pass}) // We bypass user check in backend if pass matches master key
+                });
+                if(r.ok) {
+                    const data = await r.json();
+                    localStorage.setItem('shield_token', data.token);
+                    showDashboard();
+                } else {
+                    // Fallback to old method for master bypass
+                    localStorage.setItem('shield_token', pass);
+                    showDashboard();
+                }
+            } catch(e) {
+                localStorage.setItem('shield_token', pass);
+                showDashboard();
+            }
+        }
+
+        function logout() { localStorage.clear(); location.reload(); }
+
+        function showDashboard() {
+            document.getElementById('auth-overlay').style.display = 'none';
+            document.getElementById('dashboard-content').style.display = 'block';
+            setInterval(updateData, 3000);
+            updateData();
+        }
+
+        async function updateData() {
+            try {
+                const r = await fetch('/status', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('shield_token') }});
+                if(r.status === 401) { logout(); return; }
+                const data = await r.json();
+
+                document.getElementById('stats-packets').innerText = data.total_packets;
+                document.getElementById('stats-blocked').innerText = data.blocked_ips.length;
+                document.getElementById('stats-active').innerText = data.active_ips.length;
+                document.getElementById('stats-anomalies').innerText = data.anomalies;
+
+                const aiBadge = document.getElementById('ai-badge');
+                if(data.training) {
+                    aiBadge.innerText = "IA: ATIVA & PROTEGENDO";
+                    aiBadge.classList.replace('text-yellow-500', 'text-green-500');
+                    aiBadge.classList.replace('border-yellow-600', 'border-green-600');
+                }
+
+                document.getElementById('blocked-list').innerHTML = data.blocked_ips.map(ip => `
+                    <div class="ip-card blocked p-3 rounded" oncontextmenu="unblockIP(event, '${ip}')">
+                        <span class="font-mono text-white font-bold">${ip}</span>
+                    </div>`).join('') || '<p class="text-zinc-800 text-xs italic">No threats found.</p>';
+
+                document.getElementById('active-list').innerHTML = data.active_ips.map(conn => `
+                    <div class="ip-card active p-3 rounded" oncontextmenu="blockIP(event, '${conn.split(' ')[0]}')">
+                        <span class="font-mono text-white text-xs">${conn}</span>
+                    </div>`).join('');
+
+                const ctx = document.getElementById('trafficChart').getContext('2d');
+                if (!chart) {
+                    chart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: data.times,
+                            datasets: [{ label: 'Pkts', data: data.packets, borderColor: '#7800ff', backgroundColor: 'rgba(120,0,255,0.05)', fill: true, tension:0.4 }]
+                        },
+                        options: { responsive: true, animation: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } }
+                    });
+                } else {
+                    chart.data.labels = data.times;
+                    chart.data.datasets[0].data = data.packets;
+                    chart.update('none');
+                }
+            } catch(e) {}
+        }
+
+        async function blockIP(e, ip) {
+            e.preventDefault();
+            if(!confirm(`Annihilate ${ip}?`)) return;
+            await fetch('/block_ip', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('shield_token') },
+                body: JSON.stringify({ip: ip})
+            });
+        }
+
+        async function unblockIP(e, ip) {
+            e.preventDefault();
+            if(!confirm(`Release ${ip}?`)) return;
+            await fetch('/unblock_ip', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('shield_token') },
+                body: JSON.stringify({ip: ip})
+            });
+        }
+    </script>
+</body>
+</html>

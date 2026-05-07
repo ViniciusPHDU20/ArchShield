@@ -1,0 +1,10 @@
+# Ambientes e Compilação
+.venv/
+__pycache__/
+*.pyc
+
+# Segurança e Logs
+.env
+*.log
+*.db
+data/*.joblib
