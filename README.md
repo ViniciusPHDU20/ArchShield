@@ -20,6 +20,27 @@ Unlike traditional signature-based firewalls, ArchShield PRO uses **Behavioral A
 
 ## 🔧 Installation & Setup
 
+### Method A: Arch Linux (AUR) - Recommended
+ArchShield PRO is officially available for Arch Linux users via the AUR. It comes pre-configured as a systemd daemon.
+
+1. **Install using yay:**
+   ```bash
+   yay -S archshield-pro
+   ```
+
+2. **Start the service in background:**
+   ```bash
+   sudo systemctl start archshield
+   ```
+   *To enable on boot: `sudo systemctl enable archshield`*
+
+3. **Or run it directly in your terminal to see live logs:**
+   ```bash
+   sudo archshield-pro
+   ```
+
+### Method B: Manual Installation (Other Distros)
+
 1. **Clone the repository:**
    ```bash
    git clone https://github.com/ViniciusPHDU20/ArchShield.git
@@ -38,10 +59,11 @@ Unlike traditional signature-based firewalls, ArchShield PRO uses **Behavioral A
    sudo .venv/bin/python main.py
    ```
 
-4. **First-Run Configuration:**
-   - Open your browser and navigate to `http://localhost:5555`.
-   - The system will detect the missing configuration and present the **Initial Setup** screen.
-   - Define your Master Key. This key is used to generate secure JWTs for the API and will encrypt your session.
+### ⚙️ First-Run Configuration:
+Regardless of the installation method, you must complete the initial setup:
+1. Open your browser and navigate to `http://localhost:5555`.
+2. The system will detect the missing configuration and present the **Initial Setup** screen.
+3. Define your Master Key. This key is used to generate secure JWTs for the API and will encrypt your session.
 
 ## 🧠 How the AI Learns (Sliding Window)
 ArchShield PRO does not rely on pre-trained global datasets. Upon initialization, the system will enter a "Listening State". After capturing the first 400 packets, the Isolation Forest model compiles a local baseline. The model retrains itself every 200 packets using a sliding window of the last 1000 packets, allowing it to adapt seamlessly when you switch from casual browsing to intensive tasks like gaming or streaming.
