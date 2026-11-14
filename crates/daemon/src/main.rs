@@ -57,6 +57,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let state = new_shared_state();
 
+    // Sincroniza IPs intrusos recuperados da persistência na blacklist nftables
+    {
+        let st = state.read().await;
+        if !st.trapped_intruders.is_empty() {
+            info!(
+                "🛡️ [NETFILTER-SYNC] Re-armando blacklist no kernel para {} IPs bloqueados anteriormente",
+                st.trapped_intruders.len()
+            );
+            for intruder in &st.trapped_intruders {
+                FirewallManager::block_ip(&intruder.ip, config.dry_run);
+            }
+        }
+    }
+
     // 1. Inicia o servidor IPC via UNIX Domain Socket (0 portas de rede abertas)
     let socket_path = config.socket_path.clone();
     let ipc_state = Arc::clone(&state);
@@ -91,11 +105,32 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
+    // 6. Motor de Persistência em Disco: Salva contadores e histórico a cada 10s
+    let persist_state = Arc::clone(&state);
+    tokio::spawn(async move {
+        let mut persist_interval = tokio::time::interval(Duration::from_secs(10));
+        loop {
+            persist_interval.tick().await;
+            persist_state.read().await.save_persistent();
+        }
+    });
+
     info!("🚀 [DAEMON-ONLINE] ArchShield Sovereign Daemon operacional com sucesso!");
 
-    // Aguarda sinal de terminação (Ctrl+C ou SIGTERM)
-    tokio::signal::ctrl_c().await?;
-    info!("🛑 Sinal de encerramento detectado. Desarmando componentes...");
+    // Aguarda sinal de terminação (Ctrl+C ou SIGTERM do systemd/reboot)
+    let mut sigterm = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
+    tokio::select! {
+        _ = tokio::signal::ctrl_c() => {
+            info!("🛑 Sinal SIGINT (Ctrl+C) detectado. Salvando estado atômico...");
+        }
+        _ = sigterm.recv() => {
+            info!("🛑 Sinal SIGTERM (Systemd/Reboot) detectado. Salvando estado atômico...");
+        }
+    }
+
+    // Flush final de persistência
+    state.read().await.save_persistent();
+    info!("💾 [PERSISTÊNCIA] Contadores e histórico salvos em disco com sucesso.");
 
     // Remove o socket local ao sair
     if config.socket_path.exists() {

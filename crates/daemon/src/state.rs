@@ -2,10 +2,18 @@
 use archshield_core::{
     ConnectionInfo, CovertAlert, IntruderEvent, KernelIntegrityReport, RootkitHunter, SystemStatus,
 };
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use tokio::sync::RwLock;
+
+#[derive(Serialize, Deserialize, Default, Clone)]
+pub struct PersistentData {
+    pub total_packets: u64,
+    pub trapped_intruders: Vec<IntruderEvent>,
+}
 
 pub struct SystemState {
     pub total_packets: AtomicU64,
@@ -20,12 +28,37 @@ pub struct SystemState {
 }
 
 impl SystemState {
+    pub fn get_persistence_path() -> PathBuf {
+        let var_dir = Path::new("/var/lib/archshield");
+        if var_dir.exists() || std::fs::create_dir_all(var_dir).is_ok() {
+            return var_dir.join("state.json");
+        }
+        PathBuf::from("/tmp/archshield_state.json")
+    }
+
     pub fn new() -> Self {
         let initial_kernel_report = RootkitHunter::audit();
+        let state_path = Self::get_persistence_path();
+
+        let mut initial_packets = 0;
+        let mut initial_intruders = Vec::new();
+
+        if let Ok(content) = std::fs::read_to_string(&state_path) {
+            if let Ok(data) = serde_json::from_str::<PersistentData>(&content) {
+                initial_packets = data.total_packets;
+                initial_intruders = data.trapped_intruders;
+                tracing::info!(
+                    "💾 [PERSISTÊNCIA] Estado recuperado de {:?}: {} pacotes acumulados, {} intrusos em histórico",
+                    state_path,
+                    initial_packets,
+                    initial_intruders.len()
+                );
+            }
+        }
 
         Self {
-            total_packets: AtomicU64::new(0),
-            trapped_intruders: Vec::new(),
+            total_packets: AtomicU64::new(initial_packets),
+            trapped_intruders: initial_intruders,
             ip_domain_cache: HashMap::new(),
             ip_org_cache: HashMap::new(),
             traffic_history: vec![0; 20],
@@ -33,6 +66,21 @@ impl SystemState {
             current_second_packets: AtomicU64::new(0),
             covert_alerts: Vec::new(),
             kernel_report: initial_kernel_report,
+        }
+    }
+
+    pub fn save_persistent(&self) {
+        let path = Self::get_persistence_path();
+        let data = PersistentData {
+            total_packets: self.total_packets.load(Ordering::Relaxed),
+            trapped_intruders: self.trapped_intruders.clone(),
+        };
+
+        if let Ok(json) = serde_json::to_string_pretty(&data) {
+            let tmp_path = format!("{}.tmp", path.display());
+            if std::fs::write(&tmp_path, json).is_ok() {
+                let _ = std::fs::rename(&tmp_path, &path);
+            }
         }
     }
 
