@@ -1,9 +1,39 @@
 // language: Rust, file: crates/daemon/src/whitelist.rs, runtime: tokio, target: Linux
+use std::collections::HashSet;
 use std::net::{IpAddr, Ipv4Addr};
 
 pub struct Whitelist;
 
 impl Whitelist {
+    /// Descobre dinamicamente todos os endereços IP (IPv4 e IPv6) de todas as interfaces da própria máquina
+    pub fn get_local_ips() -> HashSet<IpAddr> {
+        let mut ips = HashSet::new();
+        unsafe {
+            let mut ifaddrs: *mut libc::ifaddrs = std::ptr::null_mut();
+            if libc::getifaddrs(&mut ifaddrs) == 0 && !ifaddrs.is_null() {
+                let mut curr = ifaddrs;
+                while !curr.is_null() {
+                    let addr = (*curr).ifa_addr;
+                    if !addr.is_null() {
+                        let family = (*addr).sa_family as i32;
+                        if family == libc::AF_INET {
+                            let sa_in = addr as *const libc::sockaddr_in;
+                            let ip = Ipv4Addr::from(u32::from_be((*sa_in).sin_addr.s_addr));
+                            ips.insert(IpAddr::V4(ip));
+                        } else if family == libc::AF_INET6 {
+                            let sa_in6 = addr as *const libc::sockaddr_in6;
+                            let ip = std::net::Ipv6Addr::from((*sa_in6).sin6_addr.s6_addr);
+                            ips.insert(IpAddr::V6(ip));
+                        }
+                    }
+                    curr = (*curr).ifa_next;
+                }
+                libc::freeifaddrs(ifaddrs);
+            }
+        }
+        ips
+    }
+
     /// Valida se um IP ou CIDR pertence à lista de permissão estrita.
     /// Garante matematicamente que serviços vitais, jogos, redes locais e CDNs jamais sejam bloqueados.
     pub fn is_whitelisted(entry: &str) -> bool {
@@ -11,6 +41,11 @@ impl Whitelist {
         let ip_str = clean.split('/').next().unwrap_or(clean).trim();
 
         if let Ok(ip) = ip_str.parse::<IpAddr>() {
+            // Imunidade absoluta: Nunca bloqueia nenhum IP da própria máquina
+            if Self::get_local_ips().contains(&ip) {
+                return true;
+            }
+
             match ip {
                 IpAddr::V4(v4) => {
                     // Loopback: 127.0.0.0/8

@@ -78,14 +78,17 @@ impl PacketSniffer {
 
         let mut buf = [0u8; 65535];
         loop {
+            let mut sll: libc::sockaddr_ll = unsafe { std::mem::zeroed() };
+            let mut sll_len = std::mem::size_of::<libc::sockaddr_ll>() as libc::socklen_t;
+
             let n = unsafe {
                 libc::recvfrom(
                     fd,
                     buf.as_mut_ptr() as *mut libc::c_void,
                     buf.len(),
                     0,
-                    std::ptr::null_mut(),
-                    std::ptr::null_mut(),
+                    &mut sll as *mut libc::sockaddr_ll as *mut libc::sockaddr,
+                    &mut sll_len,
                 )
             };
 
@@ -93,17 +96,20 @@ impl PacketSniffer {
                 continue;
             }
 
+            // Descarta pacotes enviados por esta própria máquina (outbound) para a armadilha
+            let is_outgoing = sll.sll_pkttype == libc::PACKET_OUTGOING;
+
             let frame = &buf[..n as usize];
             if let Some(eth) = EthernetPacket::new(frame) {
                 if let Ok(st) = state.try_read() {
                     st.record_packet();
                 }
-                Self::process_ethernet(&eth, &config, &state);
+                Self::process_ethernet(&eth, is_outgoing, &config, &state);
             }
         }
     }
 
-    fn process_ethernet(eth: &EthernetPacket, config: &DaemonConfig, state: &SharedState) {
+    fn process_ethernet(eth: &EthernetPacket, is_outgoing: bool, config: &DaemonConfig, state: &SharedState) {
         match eth.get_ethertype() {
             EtherTypes::Ipv4 => {
                 if let Some(ipv4) = Ipv4Packet::new(eth.payload()) {
@@ -116,6 +122,7 @@ impl PacketSniffer {
                         &src,
                         &dst,
                         ttl,
+                        is_outgoing,
                         config,
                         state,
                     );
@@ -132,6 +139,7 @@ impl PacketSniffer {
                         &src,
                         &dst,
                         ttl,
+                        is_outgoing,
                         config,
                         state,
                     );
@@ -147,6 +155,7 @@ impl PacketSniffer {
         src: &str,
         dst: &str,
         ttl: u8,
+        is_outgoing: bool,
         config: &DaemonConfig,
         state: &SharedState,
     ) {
@@ -156,9 +165,13 @@ impl PacketSniffer {
                     let flags = tcp.get_flags();
                     let dst_port = tcp.get_destination();
 
-                    // Detecta conexões TCP SYN puras (sem ACK) para fingerprint e armadilha
-                    if (flags & TcpFlags::SYN) != 0 && (flags & TcpFlags::ACK) == 0 {
-                        Self::handle_syn(&tcp, src, dst, dst_port, ttl, config, state);
+                    // Armadilha e fingerprint são disparados EXCLUSIVAMENTE para conexões INCOMING (inbound)
+                    if !is_outgoing && (flags & TcpFlags::SYN) != 0 && (flags & TcpFlags::ACK) == 0 {
+                        if let Ok(src_ip) = src.parse::<std::net::IpAddr>() {
+                            if !crate::whitelist::Whitelist::get_local_ips().contains(&src_ip) {
+                                Self::handle_syn(&tcp, src, dst, dst_port, ttl, config, state);
+                            }
+                        }
                     }
 
                     // Se for tráfego TLS na porta 443 com payload, extrai SNI
@@ -181,15 +194,17 @@ impl PacketSniffer {
                 }
             }
             IpNextHeaderProtocols::Icmp | IpNextHeaderProtocols::Icmpv6 => {
-                if let Some(covert) = archshield_core::analyze_icmp_payload(payload, src, dst) {
-                    let alert_msg = format!("Canal Oculto ICMP de {} para {}: {}", src, dst, covert.summary);
-                    Notifier::alert_covert(&alert_msg);
-                    tokio::spawn({
-                        let state = Arc::clone(state);
-                        async move {
-                            state.write().await.record_covert_alert(covert);
-                        }
-                    });
+                if !is_outgoing {
+                    if let Some(covert) = archshield_core::analyze_icmp_payload(payload, src, dst) {
+                        let alert_msg = format!("Canal Oculto ICMP de {} para {}: {}", src, dst, covert.summary);
+                        Notifier::alert_covert(&alert_msg);
+                        tokio::spawn({
+                            let state = Arc::clone(state);
+                            async move {
+                                state.write().await.record_covert_alert(covert);
+                            }
+                        });
+                    }
                 }
             }
             _ => {}
