@@ -131,6 +131,9 @@ impl SystemState {
 
     pub fn associate_ip_domain(&mut self, ip: String, domain: String) {
         if !ip.is_empty() && !domain.is_empty() {
+            if self.ip_domain_cache.len() > 2000 {
+                self.ip_domain_cache.clear();
+            }
             self.ip_domain_cache.insert(ip, domain);
         }
     }
