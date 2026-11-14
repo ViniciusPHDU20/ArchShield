@@ -22,6 +22,9 @@ impl FirewallManager {
     }
 
     pub fn init_engine() {
+        // Limpa tabela anterior para evitar duplicação de regras em reinícios
+        Self::run_cmd("nft", &["delete", "table", "inet", "archshield"]);
+
         // Inicializa tabela atômica inet archshield no nftables com O(1) hash sets e suporte a CIDR
         Self::run_cmd("nft", &["add", "table", "inet", "archshield"]);
         Self::run_cmd("nft", &["add", "set", "inet", "archshield", "blacklist_v4", "{", "type", "ipv4_addr;", "flags", "interval;", "}"]);
