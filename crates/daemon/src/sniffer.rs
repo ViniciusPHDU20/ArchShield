@@ -1,6 +1,7 @@
 // language: Rust, file: crates/daemon/src/sniffer.rs, runtime: tokio, target: Linux
 use crate::config::DaemonConfig;
 use crate::firewall::FirewallManager;
+use crate::notify::Notifier;
 use crate::sni::extract_sni;
 use crate::state::SharedState;
 use archshield_core::{describe_port, fingerprint_syn, IntruderEvent};
@@ -181,6 +182,8 @@ impl PacketSniffer {
             }
             IpNextHeaderProtocols::Icmp | IpNextHeaderProtocols::Icmpv6 => {
                 if let Some(covert) = archshield_core::analyze_icmp_payload(payload, src, dst) {
+                    let alert_msg = format!("Canal Oculto ICMP detectado de {} para {}: {}", src, dst, covert.summary);
+                    Notifier::send_alert("⚠️ ArchShield PRO: Alerta Encoberto", &alert_msg, "critical");
                     tokio::spawn({
                         let state = Arc::clone(state);
                         async move {
@@ -291,6 +294,16 @@ impl PacketSniffer {
             if fp.is_scanner && !is_blocked {
                 FirewallManager::block_ip(src, config.dry_run);
             }
+
+            // Notificação visual desktop nativa
+            let alert_body = format!(
+                "Intruso interceptado na porta {} ({})\nIP: {} | Scanner: {}",
+                dst_port,
+                describe_port(dst_port),
+                src,
+                if fp.scanner_name.is_empty() { "Probe Genérico" } else { &fp.scanner_name }
+            );
+            Notifier::send_alert("🚨 ArchShield PRO: Intrusão Neutralizada", &alert_body, "critical");
 
             tokio::spawn({
                 let state = Arc::clone(state);

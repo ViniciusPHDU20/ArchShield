@@ -5,6 +5,7 @@ mod dns;
 mod feeds;
 mod firewall;
 mod ipc;
+mod notify;
 mod sniffer;
 mod sni;
 mod state;
@@ -14,6 +15,7 @@ use config::DaemonConfig;
 use dns::DnsSniffer;
 use feeds::ThreatFeeds;
 use firewall::FirewallManager;
+use notify::Notifier;
 use ipc::IpcServer;
 use sniffer::PacketSniffer;
 use state::new_shared_state;
@@ -104,6 +106,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         loop {
             audit_interval.tick().await;
             let report = archshield_core::RootkitHunter::audit();
+            if !report.hidden_lkm_modules.is_empty() || !report.hidden_pids.is_empty() {
+                let msg = format!(
+                    "Atenção: Anomalia no Kernel detectada!\nMódulos LKM Ocultos: {}\nProcessos Fantasmas DKOM: {}",
+                    report.hidden_lkm_modules.len(),
+                    report.hidden_pids.len()
+                );
+                Notifier::send_alert("💀 ArchShield PRO: Alerta de Rootkit", &msg, "critical");
+            }
             audit_state.write().await.update_kernel_report(report);
         }
     });
