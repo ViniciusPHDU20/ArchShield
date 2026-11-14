@@ -32,7 +32,7 @@ class CoreEngine:
 
         # O Motor AppShield: IPs pertencentes a aplicativos protegidos no host
         self.dynamic_safe_ips = set()
-        self.vital_apps = ["VESKTOP", "DISCORD", "WEBCORD", "STEAM", "STEAMWEBHELPER", "FIREFOX", "CHROME", "SPOTIFY"]
+        self.vital_apps = ["VESKTOP", "DISCORD", "WEBCORD", "STEAM", "STEAMWEBHELPER", "FIREFOX", "CHROME", "SPOTIFY", "AGY-REAL", "ANTIGRAVITY"]
 
         # Redes de infraestrutura protegidas (Sem falsos positivos)
         self.infra_networks = [
