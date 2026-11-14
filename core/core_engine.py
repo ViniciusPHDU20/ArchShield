@@ -15,12 +15,41 @@ import subprocess
 import os
 import time
 from multiprocessing import Process, Queue
-from scapy.all import sniff, IP, TCP, UDP
+from scapy.all import sniff, IP, TCP, UDP, DNS, DNSRR, Raw
 from core.intelligence import IntelligenceCore
 from core.firewall import FirewallManager
 from core.fingerprint import fingerprint_syn, describe_port
 from core.conntrack import ProcessTracker
 from utils.config import config
+
+def extract_sni(payload: bytes):
+    try:
+        if len(payload) < 44 or payload[0] != 0x16 or payload[5] != 0x01:
+            return None
+        session_id_len = payload[43]
+        pos = 44 + session_id_len
+        if pos + 2 > len(payload): return None
+        cipher_suites_len = int.from_bytes(payload[pos:pos+2], 'big')
+        pos += 2 + cipher_suites_len
+        if pos + 1 > len(payload): return None
+        comp_methods_len = payload[pos]
+        pos += 1 + comp_methods_len
+        if pos + 2 > len(payload): return None
+        extensions_len = int.from_bytes(payload[pos:pos+2], 'big')
+        pos += 2
+        end = min(pos + extensions_len, len(payload))
+        while pos + 4 <= end:
+            ext_type = int.from_bytes(payload[pos:pos+2], 'big')
+            ext_len = int.from_bytes(payload[pos+2:pos+4], 'big')
+            pos += 4
+            if ext_type == 0:
+                if pos + 5 <= len(payload):
+                    sni_len = int.from_bytes(payload[pos+3:pos+5], 'big')
+                    return payload[pos+5:pos+5+sni_len].decode('utf-8', errors='ignore')
+            pos += ext_len
+    except Exception:
+        pass
+    return None
 
 class CoreEngine:
     def __init__(self, stats_dict):
@@ -29,6 +58,7 @@ class CoreEngine:
         self.intelligence = IntelligenceCore()
         self.firewall = FirewallManager()
         self.local_ip = self._detect_local_ip()
+        self.dns_map = {}
 
         # O Motor AppShield: IPs pertencentes a aplicativos protegidos no host
         self.dynamic_safe_ips = set()
@@ -48,6 +78,7 @@ class CoreEngine:
         # Inicializa listas no Manager compartilhado
         self.stats['trapped_intruders'] = []
         self.stats['outbound_conns'] = []
+        self.stats['dns_cache'] = {}
         self.stats['active_conns'] = {}
         self.stats['blocked_ips'] = FirewallManager.get_active_blocks()
 
@@ -93,12 +124,33 @@ class CoreEngine:
                         tcp_flags = str(pkt[TCP].flags)
                         tcp_win = pkt[TCP].window
                         tcp_options = pkt[TCP].options or []
+
+                        # Extrai SNI (Nome do Site no handshake TLS)
+                        if dport == 443 and Raw in pkt:
+                            sni = extract_sni(bytes(pkt[Raw].load))
+                            if sni:
+                                self.packet_queue.put({"type": "DNS_MAP", "ip": dst, "domain": sni}, block=False)
+
                     elif UDP in pkt:
                         proto = "UDP"
                         sport = pkt[UDP].sport
                         dport = pkt[UDP].dport
 
+                        # Extrai Respostas DNS (Resolução IP -> Nome do Site)
+                        if (sport == 53 or dport == 53) and DNS in pkt:
+                            try:
+                                if pkt[DNS].qr == 1 and pkt[DNS].qd:
+                                    qname = pkt[DNS].qd.qname.decode('utf-8', errors='ignore').rstrip('.')
+                                    if pkt[DNS].an:
+                                        for i in range(pkt[DNS].ancount):
+                                            an = pkt[DNS].an[i]
+                                            if hasattr(an, 'rdata') and hasattr(an, 'type') and an.type in (1, 28):
+                                                self.packet_queue.put({"type": "DNS_MAP", "ip": str(an.rdata), "domain": qname}, block=False)
+                            except Exception:
+                                pass
+
                     self.packet_queue.put({
+                        "type": "PACKET",
                         "src": src,
                         "dst": dst,
                         "proto": proto,
@@ -147,6 +199,14 @@ class CoreEngine:
         while True:
             try:
                 pkt_data = self.packet_queue.get()
+
+                # Processa mapeamento de Nome de Site / Domínio em tempo real
+                if pkt_data.get("type") == "DNS_MAP":
+                    dns_cache = dict(self.stats.get('dns_cache', {}))
+                    dns_cache[pkt_data["ip"]] = pkt_data["domain"]
+                    self.stats['dns_cache'] = dns_cache
+                    continue
+
                 local_packet_count += 1
 
                 if local_packet_count % 50 == 0:

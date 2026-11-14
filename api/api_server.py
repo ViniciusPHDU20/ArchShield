@@ -282,13 +282,20 @@ async def get_status(user: str = Depends(verify_token)):
 
     # 4. Telemetria de Processos de Saída (Outbound Matrix)
     raw_outbound = list(stats_bridge.get('outbound_conns', []))
+    dns_map = dict(stats_bridge.get('dns_cache', {}))
     enriched_outbound = []
-    for sock in raw_outbound[:40]:
+    for sock in raw_outbound[:45]:
         r_ip = sock.get('remote_ip')
         ident = get_fast_deep_identity(r_ip) if r_ip and r_ip not in ("*", "") else {}
         entry = dict(sock)
         entry['org'] = ident.get('company', '')
         entry['country_code'] = ident.get('country_code', '')
+        
+        # Mapeamento do Nome Real do Site (via DNS Sniffing, TLS SNI ou Reverse DNS)
+        site_name = dns_map.get(r_ip) or ident.get('domain', '')
+        if site_name in ("Cached", "IP Direto", "Local"):
+            site_name = dns_map.get(r_ip, "")
+        entry['site'] = site_name
         enriched_outbound.append(entry)
 
     return {
