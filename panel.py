@@ -12,6 +12,7 @@ import json
 from PyQt6.QtCore import QUrl, QTimer
 from PyQt6.QtWidgets import QApplication, QMainWindow
 from PyQt6.QtWebEngineWidgets import QWebEngineView
+from PyQt6.QtWebEngineCore import QWebEngineSettings
 
 SOCKET_PATHS = [
     os.environ.get("ARCHSHIELD_SOCKET_PATH", ""),
@@ -49,10 +50,17 @@ class SovereignPanel(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("ArchShield PRO - Sovereign Tripwire & Deception Panel (0 Ports)")
-        self.resize(1360, 860)
+        self.resize(1360, 880)
 
         self.browser = QWebEngineView()
         self.setCentralWidget(self.browser)
+
+        # Habilita execução de JS e acesso a arquivos locais e CDNs
+        settings = self.browser.settings()
+        settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptEnabled, True)
+        settings.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True)
+        settings.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessFileUrls, True)
+        settings.setAttribute(QWebEngineSettings.WebAttribute.ScrollAnimatorEnabled, True)
 
         base_dir = os.path.dirname(os.path.abspath(__file__))
         html_path = os.path.join(base_dir, "templates", "index.html")
@@ -67,8 +75,15 @@ class SovereignPanel(QMainWindow):
 
     def on_load_finished(self, ok):
         if ok:
-            # Ativa modo desktop nativo no frontend e atualiza imediatamente
-            self.browser.page().runJavaScript("window.isNativeDesktop = true;")
+            # Ativa modo desktop nativo no frontend, oculta overlay de senha e força primeiro refresh
+            init_js = """
+                window.isNativeDesktop = true;
+                const auth = document.getElementById('auth-overlay');
+                if (auth) auth.style.display = 'none';
+                const dash = document.getElementById('dashboard-content');
+                if (dash) dash.style.display = 'block';
+            """
+            self.browser.page().runJavaScript(init_js)
             self.refresh_telemetry()
 
     def on_title_changed(self, title):

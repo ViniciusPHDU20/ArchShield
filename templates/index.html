@@ -1,11 +1,11 @@
 <!DOCTYPE html>
+<!-- language: HTML/CSS/JS, file: templates/index.html, target: Linux/WebEngine/Browser -->
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ArchShield PRO - Sovereign Tripwire & Intelligence Command</title>
+    <title>ArchShield PRO - Sovereign Tripwire & Intelligence Command (0 Ports)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
             --primary: #8b5cf6;
@@ -17,104 +17,351 @@
             --card: #121217;
             --border: #27272a;
         }
-        body { background-color: var(--bg); color: #f4f4f5; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; overflow-x: hidden; }
-        .neon-text { color: #a78bfa; text-shadow: 0 0 10px rgba(167, 139, 250, 0.5); }
-        .card-vault { background: var(--card); border: 1px solid var(--border); transition: all 0.2s ease; }
+
+        /* RESET & BASE */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg);
+            color: #f4f4f5;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow-x: hidden;
+            padding: 24px;
+        }
+
+        .max-w-7xl { max-width: 84rem; margin-left: auto; margin-right: auto; }
+        .neon-text { color: #a78bfa; text-shadow: 0 0 12px rgba(167, 139, 250, 0.6); }
+
+        /* FLEX & GRIDS (100% OFFLINE) */
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .flex-wrap { flex-wrap: wrap; }
+        .items-center { align-items: center; }
+        .items-start { align-items: flex-start; }
+        .items-baseline { align-items: baseline; }
+        .justify-between { justify-content: space-between; }
+        .justify-center { justify-content: center; }
+        .min-w-0 { min-width: 0; }
+        .shrink-0 { flex-shrink: 0; }
+        .gap-1 { gap: 0.25rem; }
+        .gap-1\.5 { gap: 0.375rem; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-3 { gap: 0.75rem; }
+        .gap-4 { gap: 1rem; }
+        .gap-6 { gap: 1.5rem; }
+
+        .grid { display: grid; }
+        .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+        .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        .col-span-full { grid-column: 1 / -1; }
+
+        @media (min-width: 768px) {
+            .md\:flex-row { flex-direction: row; }
+            .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (min-width: 1024px) {
+            .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .lg\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+            .lg\:col-span-2 { grid-column: span 2 / span 2; }
+        }
+
+        /* CARDS & CONTAINERS */
+        .card-vault {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            transition: all 0.2s ease;
+        }
         .card-vault:hover { border-color: #3f3f46; }
-        .trap-card { background: #151022; border: 1px solid #4c1d95; transition: all 0.2s ease; }
-        .trap-card:hover { border-color: #8b5cf6; transform: translateY(-2px); box-shadow: 0 4px 20px rgba(139, 92, 246, 0.2); }
-        .outbound-row { background: #0e0e13; border: 1px solid #1f1f28; transition: all 0.15s ease; }
+
+        .trap-card {
+            background: #151022;
+            border: 1px solid #4c1d95;
+            border-radius: 0.75rem;
+            transition: all 0.2s ease;
+        }
+        .trap-card:hover {
+            border-color: #8b5cf6;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.25);
+        }
+
+        .outbound-row {
+            background: #0e0e13;
+            border: 1px solid #1f1f28;
+            border-radius: 0.75rem;
+            transition: all 0.15s ease;
+        }
         .outbound-row:hover { background: #161622; border-color: #3b3b4f; }
-        .filter-pill { transition: all 0.15s ease; }
-        .filter-pill.active { background: #8b5cf6; color: white; border-color: #8b5cf6; font-weight: bold; }
-        #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-        .auth-box { background: #121217; padding: 40px; border: 1px solid #7c3aed; text-align: center; border-radius: 10px; box-shadow: 0 0 30px rgba(124, 58, 237, 0.35); }
+
+        /* PADDING & MARGINS */
+        .p-2 { padding: 0.5rem; }
+        .p-2\.5 { padding: 0.625rem; }
+        .p-3 { padding: 0.75rem; }
+        .p-4 { padding: 1rem; }
+        .p-5 { padding: 1.25rem; }
+        .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+        .px-2\.5 { padding-left: 0.625rem; padding-right: 0.625rem; }
+        .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .py-0\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
+        .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+        .py-1\.5 { padding-top: 0.375rem; padding-bottom: 0.375rem; }
+        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+        .py-2\.5 { padding-top: 0.625rem; padding-bottom: 0.625rem; }
+        .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+        .py-8 { padding-top: 2rem; padding-bottom: 2rem; }
+
+        .mb-1 { margin-bottom: 0.25rem; }
+        .mb-1\.5 { margin-bottom: 0.375rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-2\.5 { margin-bottom: 0.625rem; }
+        .mb-3 { margin-bottom: 0.75rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .mb-8 { margin-bottom: 2rem; }
+        .mb-10 { margin-bottom: 2.5rem; }
+        .mt-0\.5 { margin-top: 0.125rem; }
+        .mt-1 { margin-top: 0.25rem; }
+        .pb-6 { padding-bottom: 1.5rem; }
+
+        /* BORDERS */
+        .rounded { border-radius: 0.25rem; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .rounded-xl { border-radius: 0.75rem; }
+        .rounded-full { border-radius: 9999px; }
+        .border { border-width: 1px; border-style: solid; border-color: #27272a; }
+        .border-b { border-bottom: 1px solid #27272a; }
+        .border-t { border-top: 1px solid #27272a; }
+        .border-l-4 { border-left-width: 4px; border-left-style: solid; }
+        .border-l-purple-500 { border-left-color: #a855f7; }
+        .border-l-emerald-500 { border-left-color: #10b981; }
+        .border-l-red-500 { border-left-color: #ef4444; }
+
+        /* TYPOGRAPHY */
+        .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+        .font-bold { font-weight: 700; }
+        .font-black { font-weight: 900; }
+        .font-light { font-weight: 300; }
+        .font-normal { font-weight: 400; }
+        .italic { font-style: italic; }
+        .text-center { text-align: center; }
+        .text-\[9px\] { font-size: 9px; }
+        .text-\[10px\] { font-size: 10px; }
+        .text-\[11px\] { font-size: 11px; }
+        .text-\[12px\] { font-size: 12px; }
+        .text-xs { font-size: 0.75rem; line-height: 1rem; }
+        .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+        .text-base { font-size: 1rem; line-height: 1.5rem; }
+        .text-2xl { font-size: 1.5rem; line-height: 2rem; }
+        .text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
+        .text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
+        .uppercase { text-transform: uppercase; }
+        .tracking-wider { letter-spacing: 0.05em; }
+        .tracking-widest { letter-spacing: 0.1em; }
+        .tracking-tighter { letter-spacing: -0.05em; }
+        .tracking-tight { letter-spacing: -0.025em; }
+        .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .block { display: block; }
+        .inline-block { display: inline-block; }
+
+        /* COLORS */
+        .text-white { color: #ffffff; }
+        .text-zinc-200 { color: #e4e4e7; }
+        .text-zinc-300 { color: #d4d4d8; }
+        .text-zinc-400 { color: #a1a1aa; }
+        .text-zinc-500 { color: #71717a; }
+        .text-zinc-600 { color: #52525b; }
+        .text-purple-300 { color: #d8b4fe; }
+        .text-purple-400 { color: #c084fc; }
+        .text-emerald-300 { color: #6ee7b7; }
+        .text-emerald-400 { color: #34d399; }
+        .text-red-100 { color: #fee2e2; }
+        .text-red-400 { color: #f87171; }
+        .text-red-500 { color: #ef4444; }
+        .text-yellow-500 { color: #eab308; }
+        .text-blue-300 { color: #93c5fd; }
+        .text-indigo-300 { color: #a5b4fc; }
+        .text-sky-300 { color: #7dd3fc; }
+
+        .bg-zinc-800 { background-color: #27272a; }
+        .bg-zinc-900 { background-color: #18181b; }
+        .bg-zinc-950 { background-color: #09090b; }
+        .bg-purple-950\/80 { background-color: rgba(59, 7, 100, 0.8); }
+        .bg-purple-950\/90 { background-color: rgba(59, 7, 100, 0.9); }
+        .bg-emerald-950\/90 { background-color: rgba(6, 78, 59, 0.9); }
+        .bg-red-900\/90 { background-color: rgba(127, 29, 29, 0.9); }
+        .bg-red-950\/60 { background-color: rgba(69, 10, 10, 0.6); }
+        .bg-red-950\/90 { background-color: rgba(69, 10, 10, 0.9); }
+        .bg-blue-950\/70 { background-color: rgba(23, 37, 84, 0.7); }
+        .bg-indigo-950\/70 { background-color: rgba(30, 27, 75, 0.7); }
+        .bg-sky-950\/70 { background-color: rgba(8, 47, 73, 0.7); }
+        .bg-purple-500 { background-color: #a855f7; }
+        .bg-yellow-500 { background-color: #eab308; }
+        .bg-emerald-400 { background-color: #34d399; }
+
+        /* BUTTONS & INPUTS */
+        button {
+            cursor: pointer;
+            border: 1px solid #27272a;
+            background: #18181b;
+            color: #d4d4d8;
+            font-family: inherit;
+            font-size: 0.75rem;
+            border-radius: 0.375rem;
+            padding: 0.375rem 0.75rem;
+            transition: all 0.15s ease;
+        }
+        button:hover { background: #27272a; color: #ffffff; }
+
+        .filter-pill {
+            font-size: 0.75rem;
+            font-family: monospace;
+            padding: 0.375rem 0.75rem;
+            border-radius: 9999px;
+            border: 1px solid #27272a;
+            background: #18181b;
+            color: #a1a1aa;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .filter-pill:hover { border-color: #3f3f46; color: #ffffff; }
+        .filter-pill.active { background: #8b5cf6 !important; color: #ffffff !important; border-color: #8b5cf6 !important; font-weight: bold; }
+
+        input[type="text"], input[type="password"] {
+            background-color: #09090b;
+            border: 1px solid #27272a;
+            color: #ffffff;
+            border-radius: 0.5rem;
+            padding: 0.625rem 1rem;
+            font-family: monospace;
+            font-size: 0.75rem;
+            outline: none;
+            transition: border-color 0.15s ease;
+        }
+        input[type="text"]:focus, input[type="password"]:focus { border-color: #8b5cf6; }
+
+        .search-box { position: relative; width: 100%; }
+        .search-icon {
+            position: absolute;
+            left: 0.875rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #71717a;
+            pointer-events: none;
+        }
+        .search-input {
+            width: 100%;
+            padding-left: 2.5rem !important;
+        }
+
+        .w-full { width: 100%; }
+        .w-1\.5 { width: 0.375rem; }
+        .h-1\.5 { height: 0.375rem; }
+        .w-2 { width: 0.5rem; }
+        .h-2 { height: 0.5rem; }
+
+        /* SCROLLBARS */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #09090b; }
         ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+
+        /* OVERLAY (HIDDEN BY DEFAULT FOR DESKTOP ZERO-PORT MODE) */
+        #auth-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .auth-box {
+            background: #121217;
+            padding: 40px;
+            border: 1px solid #7c3aed;
+            text-align: center;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(124, 58, 237, 0.35);
+            max-width: 24rem;
+            width: 100%;
+        }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body>
 
-    <!-- OVERLAY DE AUTENTICAÇÃO -->
+    <!-- OVERLAY DE AUTENTICAÇÃO (SE NECESSÁRIO EM SERVIDOR WEB) -->
     <div id="auth-overlay">
-        <div class="auth-box max-w-sm w-full mx-4" id="login-box">
+        <div class="auth-box" id="login-box">
             <h2 class="neon-text text-2xl font-black mb-2 uppercase tracking-wider">Acesso Restrito</h2>
             <p class="text-zinc-500 text-xs mb-6 font-mono">ARCHSHIELD PRO // SOVEREIGN VAULT</p>
-            <input type="password" id="admin-pass" placeholder="MASTER KEY" class="w-full bg-zinc-950 border border-zinc-800 p-3 text-white mb-4 outline-none focus:border-purple-500 text-sm font-mono rounded">
-            <button onclick="login()" class="w-full bg-purple-700 hover:bg-purple-600 text-white p-3 font-bold text-sm tracking-widest transition rounded uppercase">Desbloquear Vault</button>
-        </div>
-        <div class="auth-box max-w-sm w-full mx-4" id="setup-box" style="display:none;">
-            <h2 class="text-emerald-400 text-2xl font-black mb-2 uppercase tracking-wider">Configuração Inicial</h2>
-            <p class="text-zinc-400 text-xs mb-6 font-mono">Defina suas credenciais mestras do guardião.</p>
-            <input type="text" id="setup-user" placeholder="USUÁRIO" class="w-full bg-zinc-950 border border-zinc-800 p-3 text-white mb-3 outline-none focus:border-emerald-500 text-sm font-mono rounded">
-            <input type="password" id="setup-pass" placeholder="MASTER KEY" class="w-full bg-zinc-950 border border-zinc-800 p-3 text-white mb-4 outline-none focus:border-emerald-500 text-sm font-mono rounded">
-            <button onclick="performSetup()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-3 font-bold text-sm tracking-widest transition rounded uppercase">Inicializar Guardião</button>
+            <input type="password" id="admin-pass" placeholder="MASTER KEY" class="w-full mb-4">
+            <button onclick="login()" class="w-full bg-purple-700 text-white py-3 font-bold text-sm tracking-widest uppercase rounded">Desbloquear Vault</button>
         </div>
     </div>
 
-    <!-- PAINEL PRINCIPAL -->
-    <div class="max-w-7xl mx-auto" id="dashboard-content" style="display:none;">
+    <!-- PAINEL PRINCIPAL (VISÍVEL POR PADRÃO NO MODO 0-PORTAS) -->
+    <div class="max-w-7xl" id="dashboard-content">
         
         <!-- CABEÇALHO SOBERANO -->
-        <header class="flex flex-col md:flex-row justify-between items-center mb-8 pb-6 border-b border-zinc-800 gap-4">
+        <header class="flex flex-col md:flex-row justify-between items-center mb-8 pb-6 border-b gap-4">
             <div>
                 <div class="flex items-center gap-3">
-                    <h1 class="text-3xl md:text-4xl font-black neon-text tracking-tighter uppercase">ArchShield <span class="text-zinc-300 text-sm font-light">PRO v2.1</span></h1>
-                    <span class="bg-purple-950/80 border border-purple-500/50 text-purple-300 text-[10px] font-mono px-2 py-0.5 rounded tracking-widest uppercase">Tripwire Edition</span>
+                    <h1 class="text-3xl font-black neon-text tracking-tighter uppercase">ArchShield <span class="text-zinc-300 text-sm font-light">PRO v2.1</span></h1>
+                    <span class="bg-purple-950/80 border text-purple-300 text-[10px] font-mono px-2 py-0.5 rounded tracking-widest uppercase">0-Port Sovereign Edition</span>
                 </div>
                 <p class="text-zinc-500 text-xs mt-1 font-mono">Perímetro Soberano // Armadilha Silenciosa & Matriz de Processos</p>
             </div>
             <div class="flex flex-wrap items-center gap-3">
-                <div id="ai-badge" class="bg-zinc-900 border border-yellow-700/60 text-yellow-500 px-3 py-1.5 rounded text-xs font-mono font-bold uppercase flex items-center gap-2">
-                    <span class="inline-block w-2 h-2 rounded-full bg-yellow-500"></span> IA: Aprendendo
+                <div id="ai-badge" class="bg-zinc-900 border text-emerald-400 px-3 py-1.5 rounded text-xs font-mono font-bold uppercase flex items-center gap-2">
+                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span> RUST 0-PORT // ARMED
                 </div>
-                <div class="bg-zinc-900 border border-purple-800/60 text-purple-400 px-3 py-1.5 rounded text-xs font-mono font-bold uppercase flex items-center gap-2">
-                    <span class="inline-block w-2 h-2 rounded-full bg-purple-500"></span> Armadilha Armada
+                <div class="bg-zinc-900 border text-purple-400 px-3 py-1.5 rounded text-xs font-mono font-bold uppercase flex items-center gap-2">
+                    <span class="inline-block w-2 h-2 rounded-full bg-purple-500"></span> Armadilha Ativa
                 </div>
-                <button onclick="logout()" class="bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white px-3 py-1.5 rounded text-xs font-mono font-bold hover:bg-zinc-800 transition uppercase">Sair</button>
+                <button onclick="clearTrap()" class="bg-zinc-900 border text-zinc-400 hover:text-white px-3 py-1.5 rounded text-xs font-mono font-bold transition uppercase">Limpar Armadilha</button>
             </div>
         </header>
 
         <!-- CARDS DE MÉTRICAS -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <div class="card-vault p-5 rounded-lg">
+            <div class="card-vault p-5">
                 <p class="text-zinc-500 text-[10px] font-mono font-bold tracking-widest uppercase mb-1">Pacotes Analisados</p>
                 <h2 id="stats-packets" class="text-3xl font-black text-white font-mono">0</h2>
-                <span class="text-zinc-600 text-[10px] font-mono">Inspeção contínua Scapy</span>
+                <span class="text-zinc-600 text-[10px] font-mono">Motor de Captura AF_PACKET (Rust)</span>
             </div>
-            <div class="card-vault p-5 rounded-lg border-l-4 border-l-purple-500">
+            <div class="card-vault p-5 border-l-4 border-l-purple-500">
                 <p class="text-purple-400 text-[10px] font-mono font-bold tracking-widest uppercase mb-1">Invasores na Armadilha</p>
                 <div class="flex items-baseline gap-2">
                     <h2 id="stats-trapped" class="text-3xl font-black text-purple-400 font-mono">0</h2>
                     <span id="trapped-badge" class="text-[10px] font-mono text-zinc-500">Sondas silenciosas</span>
                 </div>
-                <span class="text-zinc-600 text-[10px] font-mono">Probes & Scanners Desmascarados</span>
+                <span class="text-zinc-600 text-[10px] font-mono">Portas Fantasma & Scanners</span>
             </div>
-            <div class="card-vault p-5 rounded-lg border-l-4 border-l-emerald-500">
+            <div class="card-vault p-5 border-l-4 border-l-emerald-500">
                 <p class="text-emerald-400 text-[10px] font-mono font-bold tracking-widest uppercase mb-1">Processos Conectados</p>
                 <h2 id="stats-outbound" class="text-3xl font-black text-emerald-400 font-mono">0</h2>
                 <span class="text-zinc-600 text-[10px] font-mono">Sockets de saída mapeados</span>
             </div>
-            <div class="card-vault p-5 rounded-lg border-l-4 border-l-red-500">
-                <p class="text-red-400 text-[10px] font-mono font-bold tracking-widest uppercase mb-1">Digital Purgatory</p>
+            <div class="card-vault p-5 border-l-4 border-l-red-500">
+                <p class="text-red-400 text-[10px] font-mono font-bold tracking-widest uppercase mb-1">Purgatório Digital</p>
                 <h2 id="stats-blocked" class="text-3xl font-black text-red-500 font-mono">0</h2>
-                <span class="text-zinc-600 text-[10px] font-mono">IPs banidos no Netfilter</span>
+                <span class="text-zinc-600 text-[10px] font-mono">IPs neutralizados no Netfilter</span>
             </div>
         </div>
 
         <!-- GRÁFICO DE TRÁFEGO -->
-        <div class="card-vault p-4 rounded-lg mb-8">
+        <div class="card-vault p-4 mb-8">
             <div class="flex justify-between items-center mb-2 px-2">
                 <h3 class="text-xs font-mono font-bold text-zinc-400 uppercase tracking-widest">Vazão de Pacotes // Tempo Real</h3>
-                <span class="text-[10px] font-mono text-zinc-500">Janela 40s</span>
+                <span class="text-[10px] font-mono text-zinc-500">Janela 20s (UNIX IPC)</span>
             </div>
             <canvas id="trafficChart" height="55"></canvas>
         </div>
 
         <!-- SEÇÃO 1: A ARMADILHA SILENCIOSA (INVASORES DESMASCARADOS) -->
-        <section class="mb-10 card-vault p-5 rounded-xl border border-purple-950/70">
+        <section class="mb-10 card-vault p-5 border">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
                 <div>
                     <h2 class="text-base font-black text-purple-400 font-mono tracking-wider uppercase flex items-center gap-2">
@@ -124,20 +371,19 @@
                 </div>
                 <div class="flex items-center gap-2">
                     <span id="trap-count-badge" class="text-[11px] font-mono text-zinc-500">0 detectados</span>
-                    <button onclick="clearTrap()" class="text-zinc-400 hover:text-white text-xs font-mono border border-zinc-800 hover:border-zinc-700 px-3 py-1.5 rounded transition">Limpar Registro</button>
+                    <button onclick="clearTrap()" class="text-zinc-400 hover:text-white text-xs font-mono border px-3 py-1.5 rounded transition">Limpar Registro</button>
                 </div>
             </div>
 
             <!-- LUPA DE BUSCA DA ARMADILHA -->
-            <div class="relative mb-4">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-zinc-500 text-sm">🔍</span>
+            <div class="search-box mb-4">
+                <span class="search-icon">🔍</span>
                 <input type="text" id="trap-search" placeholder="Filtrar invasor por IP, país, porta ou scanner (ex: Nmap, 445, Masscan)..." 
-                       class="w-full bg-zinc-950 border border-zinc-800/90 pl-10 pr-4 py-2.5 text-xs font-mono text-white rounded-lg focus:border-purple-500 outline-none transition placeholder-zinc-600"
-                       oninput="applyTrapFilter()">
+                       class="search-input" oninput="applyTrapFilter()">
             </div>
 
             <!-- CONTAINER DE CARDS DE INVASORES -->
-            <div id="trap-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[500px] overflow-y-auto pr-1">
+            <div id="trap-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" style="max-height: 500px; overflow-y: auto; padding-right: 4px;">
                 <p class="text-zinc-600 text-xs font-mono italic col-span-full py-8 text-center">Nenhum invasor detectado na armadilha no momento. O perímetro está silencioso e protegido.</p>
             </div>
         </section>
@@ -146,65 +392,55 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
             
             <!-- OUTBOUND MATRIX (2 COLUNAS DE LARGURA) -->
-            <div class="lg:col-span-2 card-vault p-5 rounded-xl border border-emerald-950/60">
+            <div class="lg:col-span-2 card-vault p-5">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
                     <div>
                         <h2 class="text-base font-black text-emerald-400 font-mono tracking-wider uppercase flex items-center gap-2">
-                            <span>🛰️</span> Outbound Matrix // Processos do Host
+                            <span>📡</span> Outbound Process Matrix // Telemetria Completa
                         </h2>
-                        <p class="text-zinc-500 text-xs font-mono">Conexões ativas abertas pelos seus aplicativos para servidores remotos.</p>
+                        <p class="text-zinc-500 text-xs font-mono mt-0.5">Conexões geradas pelos processos locais identificadas com PID, binário e destino.</p>
                     </div>
-                    <span id="outbound-counter" class="text-xs font-mono text-zinc-500">0 conexões ativas</span>
+                    <span id="outbound-counter" class="text-[11px] font-mono text-zinc-500">0 conexões ativas</span>
                 </div>
 
-                <!-- LUPA DE BUSCA DE PROCESSOS -->
-                <div class="relative mb-3">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-zinc-500 text-sm">🔍</span>
-                    <input type="text" id="outbound-search" placeholder="Filtrar por processo (ex: chromium, steam), PID ou IP/Empresa (ex: cdn77, google)..." 
-                           class="w-full bg-zinc-950 border border-zinc-800/90 pl-10 pr-4 py-2.5 text-xs font-mono text-white rounded-lg focus:border-emerald-500 outline-none transition placeholder-zinc-600"
-                           oninput="applyOutboundFilter()">
+                <!-- BARRA DE BUSCA COM LUPA & FILTROS RÁPIDOS (TAG PILLS) -->
+                <div class="flex flex-col gap-3 mb-4">
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="outbound-search" placeholder="Filtrar por processo, PID, IP ou site (ex: chromium, 56142, xvideos, steam)..." 
+                               class="search-input" oninput="applyOutboundFilter()">
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-[10px] font-mono text-zinc-500 uppercase mr-1">Filtros rápidos:</span>
+                        <button type="button" class="filter-pill active" id="pill-all" onclick="setOutboundTag('')">Todos</button>
+                        <button type="button" class="filter-pill" id="pill-chromium" onclick="setOutboundTag('chromium')">🌐 Chromium</button>
+                        <button type="button" class="filter-pill" id="pill-steam" onclick="setOutboundTag('steam')">🎮 Steam</button>
+                        <button type="button" class="filter-pill" id="pill-agy" onclick="setOutboundTag('agy')">⚡ AI Link</button>
+                        <button type="button" class="filter-pill" id="pill-cdn77" onclick="setOutboundTag('cdn77')">🔥 CDN77 / Edge</button>
+                        <button type="button" class="filter-pill" id="pill-google" onclick="setOutboundTag('google')">🔍 Google</button>
+                    </div>
                 </div>
 
-                <!-- PILLS DE FILTRO RÁPIDO -->
-                <div class="flex flex-wrap gap-1.5 mb-4">
-                    <button onclick="setOutboundTag('')" id="pill-all" class="filter-pill active px-3 py-1 text-[11px] font-mono rounded-md border border-zinc-800 text-zinc-400 hover:text-white">Todos</button>
-                    <button onclick="setOutboundTag('chromium')" id="pill-chromium" class="filter-pill px-3 py-1 text-[11px] font-mono rounded-md bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white">🌐 Chromium</button>
-                    <button onclick="setOutboundTag('steam')" id="pill-steam" class="filter-pill px-3 py-1 text-[11px] font-mono rounded-md bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white">🎮 Steam</button>
-                    <button onclick="setOutboundTag('agy')" id="pill-agy" class="filter-pill px-3 py-1 text-[11px] font-mono rounded-md bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white">⚡ AI Link</button>
-                    <button onclick="setOutboundTag('cdn77')" id="pill-cdn77" class="filter-pill px-3 py-1 text-[11px] font-mono rounded-md bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white">📼 CDN77</button>
-                    <button onclick="setOutboundTag('google')" id="pill-google" class="filter-pill px-3 py-1 text-[11px] font-mono rounded-md bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white">🏢 Google</button>
-                </div>
-
-                <!-- LISTA DE PROCESSOS -->
-                <div id="process-list" class="space-y-2 max-h-[460px] overflow-y-auto pr-1">
-                    <p class="text-zinc-600 text-xs font-mono italic py-4 text-center">Aguardando telemetria de processos...</p>
+                <div id="process-list" class="flex flex-col gap-2" style="max-height: 480px; overflow-y: auto; padding-right: 4px;">
+                    <p class="text-zinc-600 text-xs font-mono italic py-4 text-center">Aguardando telemetria de sockets...</p>
                 </div>
             </div>
 
-            <!-- PURGATÓRIO DIGITAL (1 COLUNA DE LARGURA) -->
-            <div class="card-vault p-5 rounded-xl border border-red-950/60 flex flex-col justify-between">
-                <div>
-                    <div class="mb-4">
-                        <h2 class="text-sm font-black text-red-500 font-mono tracking-wider uppercase flex items-center gap-2">
-                            <span>💀</span> Digital Purgatory
-                        </h2>
-                        <p class="text-zinc-500 text-[11px] font-mono mt-0.5">IPs descartados em nível de kernel (DROP).</p>
-                    </div>
+            <!-- PURGATÓRIO (IPs BLOQUEADOS NO NETFILTER) -->
+            <div class="card-vault p-5">
+                <h2 class="text-base font-black text-red-500 font-mono tracking-wider uppercase mb-1 flex items-center gap-2">
+                    <span>💀</span> Purgatório Netfilter
+                </h2>
+                <p class="text-zinc-500 text-xs font-mono mb-4">IPs com DROP total no firewall.</p>
 
-                    <!-- Formulário de Bloqueio Manual -->
-                    <div class="flex gap-2 mb-4">
-                        <input type="text" id="manual-ip-input" placeholder="Ex: 198.51.100.23" class="flex-1 bg-zinc-950 border border-zinc-800 p-2.5 text-xs text-white outline-none focus:border-red-500 font-mono rounded-lg">
-                        <button onclick="handleManualBlock()" class="bg-red-700 hover:bg-red-600 text-white text-xs font-mono font-bold px-3.5 py-2.5 rounded-lg transition uppercase">Banir</button>
-                    </div>
-
-                    <!-- Lista de Bloqueios -->
-                    <div id="blocked-container" class="space-y-2 max-h-[380px] overflow-y-auto pr-1">
-                        <p class="text-zinc-600 text-xs font-mono italic py-4 text-center">Nenhum IP no purgatório.</p>
-                    </div>
+                <div class="flex gap-2 mb-4">
+                    <input type="text" id="manual-ip-input" placeholder="IP para banir..." class="w-full">
+                    <button onclick="handleManualBlock()" class="bg-red-950/90 text-red-400 hover:text-white px-3 py-2 font-mono text-xs font-bold rounded">Banir</button>
                 </div>
 
-                <div class="pt-4 border-t border-zinc-800 text-[11px] font-mono text-zinc-500 text-center">
-                    Sentenças aplicadas no topo da cadeia Netfilter
+                <div id="blocked-container" class="flex flex-col gap-2" style="max-height: 380px; overflow-y: auto; padding-right: 4px;">
+                    <p class="text-zinc-600 text-xs font-mono italic py-4 text-center">Nenhum IP no purgatório.</p>
                 </div>
             </div>
 
@@ -212,80 +448,11 @@
 
     </div>
 
-    <!-- JAVASCRIPT DE TELEMETRIA E CONTROLE -->
     <script>
         let chart = null;
-        let token = localStorage.getItem('shield_token');
-        let cachedOutboundConns = [];
         let cachedTrappedIntruders = [];
+        let cachedOutboundConns = [];
         let currentOutboundTag = '';
-
-        async function checkSetup() {
-            try {
-                const r = await fetch('/check_setup');
-                const data = await r.json();
-                if(data.setup_required) {
-                    document.getElementById('login-box').style.display = 'none';
-                    document.getElementById('setup-box').style.display = 'block';
-                } else if(token) {
-                    showDashboard();
-                }
-            } catch(e) {}
-        }
-        checkSetup();
-
-        async function performSetup() {
-            const u = document.getElementById('setup-user').value;
-            const p = document.getElementById('setup-pass').value;
-            if(!u || !p) { alert("Preencha usuário e senha."); return; }
-            try {
-                const r = await fetch('/setup', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({user: u, pass: p})
-                });
-                const data = await r.json();
-                if(data.success) {
-                    localStorage.setItem('shield_token', data.token);
-                    location.reload();
-                }
-            } catch(e) { alert("Falha na inicialização."); }
-        }
-
-        async function login() {
-            const pass = document.getElementById('admin-pass').value;
-            if(!pass) return;
-            try {
-                const r = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({user: 'admin', pass: pass})
-                });
-                if(r.ok) {
-                    const data = await r.json();
-                    localStorage.setItem('shield_token', data.token);
-                    showDashboard();
-                } else {
-                    localStorage.setItem('shield_token', pass);
-                    showDashboard();
-                }
-            } catch(e) {
-                localStorage.setItem('shield_token', pass);
-                showDashboard();
-            }
-        }
-
-        function logout() {
-            localStorage.clear();
-            location.reload();
-        }
-
-        function showDashboard() {
-            document.getElementById('auth-overlay').style.display = 'none';
-            document.getElementById('dashboard-content').style.display = 'block';
-            setInterval(updateData, 2500);
-            updateData();
-        }
 
         window.archshieldAction = function(action, param) {
             document.title = 'ARCHSHIELD_ACTION:' + action + ':' + (param || '');
@@ -309,7 +476,6 @@
             const aiBadge = document.getElementById('ai-badge');
             if(aiBadge) {
                 aiBadge.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span> RUST 0-PORT // ARMED';
-                aiBadge.className = 'bg-zinc-900 border border-emerald-700/60 text-emerald-400 px-3 py-1.5 rounded text-xs font-mono font-bold uppercase flex items-center gap-2';
             }
 
             cachedTrappedIntruders = data.trapped_intruders || [];
@@ -321,48 +487,18 @@
             updateChart(data.time_history || data.times, data.traffic_history || data.packets);
         };
 
-        async function updateData() {
-            if(window.isNativeDesktop) return; // No modo desktop nativo, atualizações chegam via renderFromNative
-            try {
-                const r = await fetch('/status', {
-                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('shield_token') }
-                });
-                if(r.status === 401) { logout(); return; }
-                const data = await r.json();
-
-                // 1. Métricas principais
-                document.getElementById('stats-packets').innerText = data.total_packets.toLocaleString();
-                document.getElementById('stats-trapped').innerText = (data.trapped_intruders || []).length;
-                document.getElementById('stats-outbound').innerText = (data.outbound_conns || []).length;
-                document.getElementById('stats-blocked').innerText = (data.blocked_ips || []).length;
-
-                // 2. Badge de IA
-                const aiBadge = document.getElementById('ai-badge');
-                if(data.training) {
-                    aiBadge.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span> IA: Protegendo';
-                    aiBadge.className = 'bg-zinc-900 border border-emerald-700/60 text-emerald-400 px-3 py-1.5 rounded text-xs font-mono font-bold uppercase flex items-center gap-2';
-                }
-
-                // Salva cache de dados para busca instantânea sem piscar tela
-                cachedTrappedIntruders = data.trapped_intruders || [];
-                cachedOutboundConns = data.outbound_conns || [];
-
-                // 3. Renderiza listas aplicando filtros ativos
-                applyTrapFilter();
-                applyOutboundFilter();
-
-                // 4. Renderiza Purgatório (Bloqueios)
-                renderBlockedIPs(data.blocked_ips || []);
-
-                // 5. Atualiza Gráfico
-                updateChart(data.times, data.packets);
-
-            } catch(e) {}
+        function setOutboundTag(tag) {
+            currentOutboundTag = tag.toLowerCase();
+            document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.remove('active'));
+            if(!tag) document.getElementById('pill-all')?.classList.add('active');
+            else if(tag === 'chromium') document.getElementById('pill-chromium')?.classList.add('active');
+            else if(tag === 'steam') document.getElementById('pill-steam')?.classList.add('active');
+            else if(tag === 'agy') document.getElementById('pill-agy')?.classList.add('active');
+            else if(tag === 'cdn77') document.getElementById('pill-cdn77')?.classList.add('active');
+            else if(tag === 'google') document.getElementById('pill-google')?.classList.add('active');
+            applyOutboundFilter();
         }
 
-        // ==========================================
-        // FILTROS & LUPA DA ARMADILHA SILENCIOSA
-        // ==========================================
         function applyTrapFilter() {
             const query = (document.getElementById('trap-search')?.value || '').toLowerCase().trim();
             const filtered = cachedTrappedIntruders.filter(i => {
@@ -382,21 +518,21 @@
         function renderTrappedIntruders(intruders) {
             const container = document.getElementById('trap-container');
             if(!intruders || intruders.length === 0) {
-                container.innerHTML = '<p class="text-zinc-600 text-xs font-mono italic col-span-full py-8 text-center">Nenhum invasor correspondente encontrado na armadilha.</p>';
+                container.innerHTML = '<p class="text-zinc-600 text-xs font-mono italic col-span-full py-8 text-center">Nenhum invasor detectado na armadilha no momento. O perímetro está silencioso e protegido.</p>';
                 return;
             }
 
             container.innerHTML = intruders.map(i => {
                 const isBlocked = i.is_blocked;
-                const badgeColor = i.is_scanner ? 'bg-red-950/90 text-red-400 border-red-700' : 'bg-purple-950/90 text-purple-400 border-purple-700';
+                const badgeColor = i.is_scanner ? 'bg-red-950/90 text-red-400' : 'bg-purple-950/90 text-purple-400';
                 
                 return `
-                <div class="trap-card p-4 rounded-xl flex flex-col justify-between">
+                <div class="trap-card p-4 flex flex-col justify-between">
                     <div>
                         <div class="flex justify-between items-start mb-2.5">
                             <div class="flex items-center gap-2">
-                                <span class="text-xs font-mono font-bold text-white bg-zinc-950 px-2.5 py-1 rounded border border-zinc-800">${i.ip}</span>
-                                <span class="text-[10px] font-mono text-zinc-400 bg-zinc-900/80 px-2 py-0.5 rounded border border-zinc-800">${i.country || 'N/A'}</span>
+                                <span class="text-xs font-mono font-bold text-white bg-zinc-950 px-2.5 py-1 rounded border">${i.ip}</span>
+                                <span class="text-[10px] font-mono text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded border">${i.country || 'Rede'}</span>
                             </div>
                             <span class="text-[9px] font-mono uppercase px-2 py-0.5 rounded border ${badgeColor}">
                                 ${i.scanner_name || i.os_family}
@@ -408,41 +544,26 @@
                         </div>
 
                         <div class="text-[11px] font-mono text-zinc-400 mb-1.5">
-                            <span class="text-zinc-500">Provedor:</span> <span class="text-zinc-300 font-bold">${i.org || 'Buscando BGP...'}</span>
+                            <span class="text-zinc-500">Provedor / ASN:</span> <span class="text-zinc-300 font-bold">${i.org || 'Local / Roteador'}</span>
                         </div>
 
-                        <div class="text-[10px] font-mono text-zinc-500 mb-3 bg-zinc-950/60 p-2 rounded border border-zinc-900">
+                        <div class="text-[10px] font-mono text-zinc-500 mb-3 bg-zinc-950 p-2 rounded border">
                             <div><span class="text-zinc-600">Assinatura:</span> ${i.signature || 'P0F/Raw'}</div>
                             <div><span class="text-zinc-600">Capturado às:</span> <span class="text-zinc-400 font-bold">${i.formatted_time}</span></div>
                         </div>
                     </div>
 
-                    <div class="pt-2.5 border-t border-purple-950/70 flex justify-between items-center">
+                    <div class="pt-2.5 border-t flex justify-between items-center" style="border-top-color: #3b0764;">
                         <span class="text-[10px] font-mono text-purple-400 flex items-center gap-1.5">
-                            <span class="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span> Desmascarado
+                            <span class="inline-block w-1.5 h-1.5 rounded-full bg-purple-500"></span> Desmascarado
                         </span>
                         ${isBlocked ? 
-                            `<button onclick="unblockIP('${i.ip}')" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-mono font-bold px-3 py-1.5 rounded transition uppercase">Liberar</button>` :
-                            `<button onclick="blockIP('${i.ip}')" class="bg-red-900/90 hover:bg-red-800 text-red-100 text-[10px] font-mono font-bold px-3 py-1.5 rounded transition border border-red-700 uppercase shadow-lg shadow-red-950/50">💀 Purgar IP</button>`
+                            `<button onclick="unblockIP('${i.ip}')" class="bg-zinc-800 text-zinc-300 text-[10px] font-mono font-bold px-3 py-1.5 rounded uppercase">Liberar</button>` :
+                            `<button onclick="blockIP('${i.ip}')" class="bg-red-900/90 text-red-100 text-[10px] font-mono font-bold px-3 py-1.5 rounded uppercase">💀 Purgar IP</button>`
                         }
                     </div>
                 </div>`;
             }).join('');
-        }
-
-        // ==========================================
-        // FILTROS & LUPA DA OUTBOUND MATRIX (PROCESSOS)
-        // ==========================================
-        function setOutboundTag(tag) {
-            currentOutboundTag = tag.toLowerCase();
-            document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.remove('active'));
-            if(!tag) document.getElementById('pill-all')?.classList.add('active');
-            else if(tag === 'chromium') document.getElementById('pill-chromium')?.classList.add('active');
-            else if(tag === 'steam') document.getElementById('pill-steam')?.classList.add('active');
-            else if(tag === 'agy') document.getElementById('pill-agy')?.classList.add('active');
-            else if(tag === 'cdn77') document.getElementById('pill-cdn77')?.classList.add('active');
-            else if(tag === 'google') document.getElementById('pill-google')?.classList.add('active');
-            applyOutboundFilter();
         }
 
         function applyOutboundFilter() {
@@ -477,32 +598,32 @@
 
             container.innerHTML = conns.map(c => {
                 const procLower = (c.process || '').toLowerCase();
-                let badgeStyle = 'bg-zinc-900 border-zinc-800 text-zinc-300';
+                let badgeStyle = 'bg-zinc-900 border text-zinc-300';
                 let icon = '📦';
 
                 if(procLower.includes('chromium') || procLower.includes('chrome') || procLower.includes('firefox')) {
-                    badgeStyle = 'bg-blue-950/70 border-blue-800/80 text-blue-300';
+                    badgeStyle = 'bg-blue-950/70 border text-blue-300';
                     icon = '🌐';
                 } else if(procLower.includes('steam')) {
-                    badgeStyle = 'bg-indigo-950/70 border-indigo-800/80 text-indigo-300';
+                    badgeStyle = 'bg-indigo-950/70 border text-indigo-300';
                     icon = '🎮';
                 } else if(procLower.includes('agy') || procLower.includes('antigravity')) {
-                    badgeStyle = 'bg-purple-950/70 border-purple-800/80 text-purple-300';
+                    badgeStyle = 'bg-purple-950/70 border text-purple-300';
                     icon = '⚡';
                 } else if(procLower.includes('vesktop') || procLower.includes('discord')) {
-                    badgeStyle = 'bg-sky-950/70 border-sky-800/80 text-sky-300';
+                    badgeStyle = 'bg-sky-950/70 border text-sky-300';
                     icon = '💬';
                 }
 
                 const orgBadge = c.org ? 
-                    `<span class="bg-zinc-900 text-purple-300 font-bold px-2 py-0.5 rounded text-[10px] border border-purple-950">${c.org}</span>` : 
-                    `<span class="text-zinc-600 text-[10px]">Identificando ASN...</span>`;
+                    `<span class="bg-zinc-900 text-purple-300 font-bold px-2 py-0.5 rounded text-[10px] border">${c.org}</span>` : 
+                    `<span class="text-zinc-600 text-[10px]">Identificando...</span>`;
 
                 const siteBadge = c.site ? 
-                    `<span class="bg-emerald-950/90 text-emerald-300 font-bold px-2 py-0.5 rounded text-[10px] border border-emerald-700/80 flex items-center gap-1">🔗 ${c.site}</span>` : '';
+                    `<span class="bg-emerald-950/90 text-emerald-300 font-bold px-2 py-0.5 rounded text-[10px] border flex items-center gap-1">🔗 ${c.site}</span>` : '';
 
                 return `
-                <div class="outbound-row p-3 rounded-xl flex items-center justify-between text-xs font-mono gap-3">
+                <div class="outbound-row p-3 flex items-center justify-between text-xs font-mono gap-3">
                     <div class="flex items-center gap-3 min-w-0">
                         <div class="px-2.5 py-1 rounded-lg border text-xs font-bold flex items-center gap-1.5 ${badgeStyle} shrink-0">
                             <span>${icon}</span>
@@ -519,8 +640,8 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
-                        <span class="text-[10px] text-zinc-500 font-mono uppercase bg-zinc-950 px-2 py-0.5 rounded border border-zinc-900">${c.proto} ${c.state}</span>
-                        <button onclick="blockIP('${c.remote_ip}')" title="Bloquear IP Remoto no Netfilter" class="bg-red-950/60 hover:bg-red-900 text-red-400 hover:text-white px-2.5 py-1 rounded border border-red-900/60 transition text-xs font-bold">🚫</button>
+                        <span class="text-[10px] text-zinc-500 font-mono uppercase bg-zinc-950 px-2 py-0.5 rounded border">${c.proto} ${c.state}</span>
+                        <button onclick="blockIP('${c.remote_ip}')" title="Bloquear IP Remoto no Netfilter" class="bg-red-950/60 text-red-400 hover:text-white px-2.5 py-1 rounded border transition text-xs font-bold">🚫</button>
                     </div>
                 </div>`;
             }).join('');
@@ -535,84 +656,66 @@
 
             container.innerHTML = blockedList.map(item => {
                 const ip = typeof item === 'object' ? item.ip : item;
-                const company = typeof item === 'object' ? item.company : 'Bloqueado';
+                const company = typeof item === 'object' ? item.company : 'Neutralizado';
                 return `
-                <div class="card-vault border-l-4 border-l-red-500 p-3 rounded-lg flex items-center justify-between text-xs font-mono">
+                <div class="card-vault border-l-4 border-l-red-500 p-3 flex items-center justify-between text-xs font-mono">
                     <div class="min-w-0">
                         <span class="font-bold text-red-400">${ip}</span>
                         <span class="text-zinc-500 text-[10px] block truncate">${company}</span>
                     </div>
-                    <button onclick="unblockIP('${ip}')" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-mono px-3 py-1 rounded transition uppercase shrink-0">Liberar</button>
+                    <button onclick="unblockIP('${ip}')" class="bg-zinc-800 text-zinc-300 text-[10px] font-mono px-3 py-1 rounded uppercase shrink-0">Liberar</button>
                 </div>`;
             }).join('');
         }
 
         function updateChart(times, packets) {
-            const ctx = document.getElementById('trafficChart').getContext('2d');
-            if (!chart) {
-                chart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: times || [],
-                        datasets: [{
-                            label: 'Pacotes/s',
-                            data: packets || [],
-                            borderColor: '#8b5cf6',
-                            backgroundColor: 'rgba(139, 92, 246, 0.08)',
-                            fill: true,
-                            tension: 0.35,
-                            borderWidth: 2,
-                            pointRadius: 0
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        animation: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            x: { display: false },
-                            y: { display: false }
+            const canvas = document.getElementById('trafficChart');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (typeof Chart !== 'undefined') {
+                if (!chart) {
+                    chart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: times || [],
+                            datasets: [{
+                                label: 'Pacotes/s',
+                                data: packets || [],
+                                borderColor: '#8b5cf6',
+                                backgroundColor: 'rgba(139, 92, 246, 0.12)',
+                                fill: true,
+                                tension: 0.35,
+                                borderWidth: 2,
+                                pointRadius: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            animation: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                x: { display: false },
+                                y: { display: false }
+                            }
                         }
-                    }
-                });
-            } else {
-                chart.data.labels = times || [];
-                chart.data.datasets[0].data = packets || [];
-                chart.update('none');
+                    });
+                } else {
+                    chart.data.labels = times || [];
+                    chart.data.datasets[0].data = packets || [];
+                    chart.update('none');
+                }
             }
         }
 
         async function blockIP(ip) {
             if(!ip || ip === '*' || ip === '127.0.0.1') return;
             if(!confirm(`Executar DROP no Netfilter para: ${ip}?`)) return;
-            if(window.isNativeDesktop) {
-                window.archshieldAction('block', ip);
-                return;
-            }
-            try {
-                await fetch('/block_ip', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('shield_token') },
-                    body: JSON.stringify({ip: ip})
-                });
-                updateData();
-            } catch(e) {}
+            window.archshieldAction('block', ip);
         }
 
         async function unblockIP(ip) {
             if(!confirm(`Liberar sentenças do Netfilter para: ${ip}?`)) return;
-            if(window.isNativeDesktop) {
-                window.archshieldAction('unblock', ip);
-                return;
-            }
-            try {
-                await fetch('/unblock_ip', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('shield_token') },
-                    body: JSON.stringify({ip: ip})
-                });
-                updateData();
-            } catch(e) {}
+            window.archshieldAction('unblock', ip);
         }
 
         async function handleManualBlock() {
@@ -625,17 +728,7 @@
 
         async function clearTrap() {
             if(!confirm("Limpar o registro de invasores capturados?")) return;
-            if(window.isNativeDesktop) {
-                window.archshieldAction('clear', '');
-                return;
-            }
-            try {
-                await fetch('/api/trap/clear', {
-                    method: 'POST',
-                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('shield_token') }
-                });
-                updateData();
-            } catch(e) {}
+            window.archshieldAction('clear', '');
         }
     </script>
 </body>
