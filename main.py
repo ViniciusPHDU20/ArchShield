@@ -1,6 +1,8 @@
 import logging
 import sys
 import os
+import warnings
+warnings.filterwarnings("ignore")
 from multiprocessing import Manager, Process
 from core.core_engine import CoreEngine
 from api.api_server import run_api
