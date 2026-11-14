@@ -10,4 +10,11 @@ done
 BASE_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
 
 export PYTHONUNBUFFERED=1
-exec python3 "$BASE_DIR/panel.py" "$@"
+if [ -f "$BASE_DIR/panel.py" ]; then
+    exec python3 "$BASE_DIR/panel.py" "$@"
+elif [ -f "/usr/share/archshield/panel.py" ]; then
+    exec python3 "/usr/share/archshield/panel.py" "$@"
+else
+    echo "Erro: panel.py não encontrado." >&2
+    exit 1
+fi
