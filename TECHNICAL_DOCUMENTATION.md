@@ -1,43 +1,69 @@
-# 🧠 TECHNICAL DOCUMENTATION: ArchShield PRO Architecture
+# 🧠 TECHNICAL DOCUMENTATION: ArchShield PRO v2.1 Architecture
+*Enterprise-Grade Network Intrusion Detection, Cyber Deception & Tripwire Prevention System*
+
+---
 
 ## 1. System Topology & IPC (Inter-Process Communication)
 
-ArchShield PRO abandons the limitations of Python's Global Interpreter Lock (GIL) by implementing a multi-process architecture using the `multiprocessing` library. The system is divided into three distinct execution contexts:
+ArchShield PRO executes on a decoupled multi-process architecture to eliminate Python's Global Interpreter Lock (GIL) and guarantee real-time latency under heavy network load:
 
-1. **The Sniffer Loop (High Priority):** Dedicated exclusively to capturing raw network packets using `scapy` at the IP level (`filter="ip"`). To guarantee zero packet loss during flood events, this process performs no complex calculations. It merely extracts critical dimensions (Size, Protocol, TTL, Port) and pushes them into an asynchronous `Queue`.
-2. **The Analyst Loop (AI & Enforcement):** Pulls vectors from the Queue. It maintains the Sliding Window of packet features and triggers the `scikit-learn` Isolation Forest training. When a hostile vector is detected, it delegates the ban order to the `FirewallManager`.
-3. **The API Server (FastAPI/Uvicorn):** Serves the dashboard and handles REST endpoints. It reads telemetry data from a thread-safe `Manager.dict()` updated atomically by the Analyst Loop.
+1. **The Sniffer Loop (Kernel Socket Layer):** Dedicated exclusively to capturing raw network frames using Scapy's `AF_PACKET` raw socket (`filter="ip"`). To guarantee zero packet loss, it extracts crucial metadata (`src`, `dst`, `proto`, `sport`, `dport`, `ttl`, `tcp_flags`, `tcp_win`, `tcp_options`) and enqueues them into an asynchronous IPC `Queue(maxsize=20000)`.
+2. **The Analyst Loop (AI & Deception Core):** Consumes vectors from the queue. Evaluates inbound TCP SYN traffic through the **Passive Fingerprint Engine**, detects scanners (Nmap/Masscan/ZMap), manages the **Sliding Window Isolation Forest**, and synchronizes with Linux Netfilter.
+3. **The API & Vault Server (FastAPI/Uvicorn):** Serves the sovereign command dashboard and provides secure REST endpoints. Reads state directly from shared memory (`multiprocessing.Manager.dict()`).
 
-## 2. The Identity Radar (Native BGP/Whois Engine)
+---
 
-Early versions of ArchShield relied on external REST APIs (e.g., ip-api.com) for geolocation and organization tracking. This proved flawed in production due to severe Rate Limiting (45 req/min) which bottlenecked the UI during intense traffic.
+## 2. The Silent Trap: Inbound Cyber Deception (Tripwire Engine)
 
-**The Sovereign Solution:**
-The system now leverages the Linux native `whois` binary wrapped in asynchronous background threads (`lookup_queue`). 
-- When an unknown IP connects, a thread spawns, executing a raw Whois query against ARIN/RIPE/LACNIC databases.
-- Using Regular Expressions (`re.findall(r'(?i)^(?:OrgName...`), ArchShield extracts the `Organization` or `NetName`.
-- The result is immediately cached into an SQLite database (`archshield_cache.db`), ensuring that subsequent encounters with the same IP require exactly zero network overhead.
+On a personal workstation or sovereign host, network traffic is predominantly **outbound** (user applications connecting to web/game/API servers). Unsolicited **inbound** packets touching non-public ports are inherently reconnaissance or attack vectors.
 
-## 3. Machine Learning Configuration (Isolation Forest)
+### A. The Blackhole Trap (`core/firewall.py`)
+- The system arms ghost ports (e.g. 21, 22, 23, 445, 3389, 8080) with a silent Netfilter `DROP` rule.
+- Unlike traditional closed ports that return `TCP RST` (revealing host presence), the scanner receives zero response.
+- Scapy's raw packet socket captures the incoming SYN packet before the Netfilter drop, triggering the passive attribution pipeline.
 
-The core defensive logic relies on Unsupervised Machine Learning. 
+### B. Passive TCP Fingerprinting (`core/fingerprint.py`)
+Without making any outbound noise, ArchShield evaluates the raw TCP handshake characteristics:
+- **Time To Live (TTL):** Discovers base operating system (Linux `64`, Windows `128`, Network gear `255`).
+- **TCP Window Size & MSS:** Distinguishes interactive clients from automated scanners.
+- **Scanner Signatures:**
+  - `Masscan`: Window size = `1024`, zero TCP options.
+  - `Nmap Stealth (-sS)`: Window size in multiples of 1024 (`1024, 2048, 3072, 4096`), reduced option sets.
+  - `ZMap`: Window size `65535` or `54272`, custom flag sequences.
+- **Port Profiling:** Identifies exploit vectors (WannaCry on `445`, SSH brute force on `22`, RDP on `3389`).
 
-*   **Algorithm:** `sklearn.ensemble.IsolationForest`
-*   **Contamination Factor:** `0.02` (2%). We assume that, statistically, 2% of incoming traffic in a healthy environment consists of scanners or malformed packets.
-*   **Feature Vector:** `[Packet_Length, is_TCP, is_UDP, TTL, Destination_Port]`
-*   **Dynamic Calibrating (Sliding Window):** The model is trained continuously. Every 100 packets (after the initial 400), the system slices the last 1000 features (`features_buffer[-1000:]`) and refits the tree.
-*   **Threshold:** Only packets returning an anomaly score of `< -0.85` (Sigma-level aggression) trigger a block.
+---
 
-## 4. CDN Immunity and Friendly-Fire Prevention
+## 3. Outbound Matrix: Process & Socket Attribution (`core/conntrack.py`)
 
-An NIDS without context is a liability. Streaming data (Discord WebRTC) or downloading packages (GitHub/Steam) generates massive, rapid UDP/TCP bursts that the AI naturally flags as DDoS anomalies.
+To eliminate blind spots and ensure total host visibility, the engine hooks into the Linux kernel socket tables (`ss -tunp -H`):
+- Maps every active connection to its real **Process Name** and **PID** (`steam`, `vesktop`, `firefox`, `curl`).
+- Dissects local and remote endpoints for both IPv4 and IPv6.
+- Prevents rogue background exfiltration: if an unexpected binary establishes a connection, it surfaces instantly on the dashboard with a 1-click Netfilter ban option.
 
-To prevent the system from isolating the host, ArchShield employs a **Three-Tier Whitelist**:
-1. **The Guardian Layer:** Local subnets (`192.168.0.0/16`) and virtual adapters (Tailscale `100.0.0.0/8`) are hardcoded to bypass the AI entirely.
-2. **The CDN Layer:** Entire `/12` and `/16` IPv4 blocks belonging to vital CDNs (Cloudflare, Fastly, Akamai) are whitelisted natively in `core_engine.py`.
-3. **The App Shield (Process Hooking):** The engine executes `ss -tunp` locally. If a hostile IP is found to be attached to a trusted user-space process (e.g., `vesktop`, `chrome`), the block order is automatically voided.
+---
 
-## 5. Security & Cryptography
+## 4. Native BGP / WHOIS Deep Identity Radar (`api/api_server.py`)
 
-- **Master Key Hashing:** The system operates without hardcoded default passwords. On first boot, the user defines a Master Key which is passed through `hashlib.sha256` and saved in a `.env` file.
-- **JWT Auth:** The FastAPI backend enforces a Zero-Trust policy on its own endpoints. The Master Key grants an HS256-signed JSON Web Token with a 24-hour lifespan. No metrics or IP data can be scraped without providing the Bearer token.
+No third-party commercial APIs or rate limits:
+- Queries the root Regional Internet Registries (ARIN, RIPE, LACNIC, APNIC, AFRINIC) via the native Linux `whois` protocol.
+- Resolves Reverse DNS (`PTR`) hostnames.
+- Results are persistently cached in SQLite (`data/archshield_cache.db`), eliminating redundant network overhead.
+
+---
+
+## 5. Machine Learning Configuration (Isolation Forest)
+
+* **Algorithm:** `sklearn.ensemble.IsolationForest`
+* **Contamination:** `0.02` (2%)
+* **Feature Vector:** `[Packet_Length, is_TCP, is_UDP, TTL, Destination_Port]`
+* **Sliding Window Retraining:** Trains dynamically on the host's actual network baseline. Retrains every 200 packets using the latest 1000 samples.
+* **Threshold:** Packets with anomaly score `< -0.88` trigger immediate Netfilter isolation.
+
+---
+
+## 6. Zero-Trust Security & Vault Cryptography
+
+- **Master Key Hashing:** Credential setup derives an HMAC-SHA256 secret key.
+- **JWT Authentication:** Strict Bearer token validation on all API endpoints.
+- **Dual Privilege Architecture:** Root-level kernel packet manipulation decoupled from minimal-privilege execution paths.

@@ -2,88 +2,187 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>ArchShield - Sovereign Command</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArchShield PRO - Sovereign Tripwire Command</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root { --primary: #7800ff; --danger: #ef4444; --success: #10b981; --bg: #050505; --card: #0d0d0d; }
-        body { background-color: var(--bg); color: #e0e0e0; font-family: 'Inter', sans-serif; overflow-x: hidden; }
-        .neon-border { border: 1px solid var(--primary); box-shadow: 0 0 10px rgba(120, 0, 255, 0.3); }
-        .neon-text { color: #9d33ff; text-shadow: 0 0 8px rgba(157, 51, 255, 0.5); }
-        .ip-card { background: var(--card); border: 1px solid #1a1a1a; transition: all 0.3s; cursor: pointer; }
-        .ip-card:hover { border-color: var(--primary); transform: translateY(-2px); }
-        .ip-card.blocked { border-left: 4px solid var(--danger); }
-        .ip-card.active { border-left: 4px solid var(--success); }
-        
+        :root {
+            --primary: #8b5cf6;
+            --primary-glow: rgba(139, 92, 246, 0.4);
+            --danger: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.4);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --bg: #09090b;
+            --card: #121217;
+            --border: #27272a;
+        }
+        body { background-color: var(--bg); color: #f4f4f5; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; overflow-x: hidden; }
+        .neon-border { border: 1px solid var(--primary); box-shadow: 0 0 15px var(--primary-glow); }
+        .neon-danger { border: 1px solid var(--danger); box-shadow: 0 0 15px var(--danger-glow); }
+        .neon-text { color: #a78bfa; text-shadow: 0 0 10px rgba(167, 139, 250, 0.5); }
+        .card-vault { background: var(--card); border: 1px solid var(--border); transition: all 0.25s ease; }
+        .card-vault:hover { border-color: #3f3f46; }
+        .trap-card { background: #16111e; border: 1px solid #4c1d95; transition: all 0.2s; }
+        .trap-card:hover { border-color: #8b5cf6; transform: translateY(-2px); box-shadow: 0 4px 20px rgba(139, 92, 246, 0.15); }
+        .pulse-red { animation: pulseRed 2s infinite; }
+        @keyframes pulseRed {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
         #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-        .auth-box { background: #111; padding: 40px; border: 1px solid var(--primary); text-align: center; border-radius: 8px; box-shadow: 0 0 20px var(--primary); }
+        .auth-box { background: #121217; padding: 40px; border: 1px solid #7c3aed; text-align: center; border-radius: 8px; box-shadow: 0 0 25px rgba(124, 58, 237, 0.3); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #09090b; }
+        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
     </style>
 </head>
-<body class="p-4 md:p-10">
+<body class="p-4 md:p-8">
+
+    <!-- OVERLAY DE AUTENTICAÇÃO -->
     <div id="auth-overlay">
-        <div class="auth-box" id="login-box">
-            <h2 class="neon-text text-2xl font-black mb-6 uppercase">Restricted Access</h2>
-            <input type="password" id="admin-pass" placeholder="MASTER KEY" class="w-full bg-black border border-zinc-800 p-3 text-white mb-4 outline-none focus:border-purple-500">
-            <button onclick="login()" class="w-full bg-purple-700 text-white p-3 font-bold hover:bg-purple-600 transition">ENTER VAULT</button>
+        <div class="auth-box max-w-sm w-full mx-4" id="login-box">
+            <h2 class="neon-text text-2xl font-black mb-2 uppercase tracking-wider">Acesso Restrito</h2>
+            <p class="text-zinc-500 text-xs mb-6 font-mono">ARCHSHIELD PRO // SOVEREIGN VAULT</p>
+            <input type="password" id="admin-pass" placeholder="MASTER KEY" class="w-full bg-zinc-950 border border-zinc-800 p-3 text-white mb-4 outline-none focus:border-purple-500 text-sm font-mono rounded">
+            <button onclick="login()" class="w-full bg-purple-700 hover:bg-purple-600 text-white p-3 font-bold text-sm tracking-widest transition rounded uppercase">Desbloquear Vault</button>
         </div>
-        <div class="auth-box" id="setup-box" style="display:none;">
-            <h2 class="text-green-500 text-2xl font-black mb-2 uppercase">Initial Setup</h2>
-            <p class="text-zinc-400 text-xs mb-6">Create your master credentials.</p>
-            <input type="text" id="setup-user" placeholder="USERNAME" class="w-full bg-black border border-zinc-800 p-3 text-white mb-4 outline-none focus:border-green-500">
-            <input type="password" id="setup-pass" placeholder="MASTER KEY" class="w-full bg-black border border-zinc-800 p-3 text-white mb-4 outline-none focus:border-green-500">
-            <button onclick="performSetup()" class="w-full bg-green-700 text-white p-3 font-bold hover:bg-green-600 transition">INITIALIZE SHIELD</button>
+        <div class="auth-box max-w-sm w-full mx-4" id="setup-box" style="display:none;">
+            <h2 class="text-emerald-400 text-2xl font-black mb-2 uppercase tracking-wider">Configuração Inicial</h2>
+            <p class="text-zinc-400 text-xs mb-6 font-mono">Defina suas credenciais mestras do guardião.</p>
+            <input type="text" id="setup-user" placeholder="USUÁRIO" class="w-full bg-zinc-950 border border-zinc-800 p-3 text-white mb-3 outline-none focus:border-emerald-500 text-sm font-mono rounded">
+            <input type="password" id="setup-pass" placeholder="MASTER KEY" class="w-full bg-zinc-950 border border-zinc-800 p-3 text-white mb-4 outline-none focus:border-emerald-500 text-sm font-mono rounded">
+            <button onclick="performSetup()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-3 font-bold text-sm tracking-widest transition rounded uppercase">Inicializar Guardião</button>
         </div>
     </div>
 
+    <!-- PAINEL PRINCIPAL -->
     <div class="max-w-7xl mx-auto" id="dashboard-content" style="display:none;">
-        <header class="flex flex-col md:flex-row justify-between items-center mb-10 border-b border-purple-900/50 pb-6">
+        
+        <!-- CABEÇALHO -->
+        <header class="flex flex-col md:flex-row justify-between items-center mb-8 pb-6 border-b border-zinc-800 gap-4">
             <div>
-                <h1 class="text-4xl font-black neon-text tracking-tighter uppercase">ArchShield <span class="text-white text-base font-light">PRO v2.0.3</span></h1>
-                <p class="text-zinc-500 text-xs mt-1 font-mono uppercase">Guardian Link Active</p>
+                <div class="flex items-center gap-3">
+                    <h1 class="text-3xl md:text-4xl font-black neon-text tracking-tighter uppercase">ArchShield <span class="text-zinc-300 text-sm font-light">PRO v2.1</span></h1>
+                    <span class="bg-purple-950/80 border border-purple-500/50 text-purple-300 text-[10px] font-mono px-2 py-0.5 rounded tracking-widest uppercase">Tripwire Edition</span>
+                </div>
+                <p class="text-zinc-500 text-xs mt-1 font-mono">Perímetro Soberano // Armadilha Silenciosa & Telemetria Conntrack</p>
             </div>
-            <div class="flex gap-4">
-                <div id="ai-badge" class="bg-zinc-900 border border-yellow-600 text-yellow-500 px-4 py-2 rounded text-xs font-bold uppercase">IA: Aprendendo</div>
-                <button onclick="logout()" class="bg-zinc-800 text-zinc-400 px-4 py-2 rounded text-xs hover:bg-zinc-700 font-bold uppercase">Terminate</button>
+            <div class="flex flex-wrap items-center gap-3">
+                <div id="ai-badge" class="bg-zinc-900 border border-yellow-700/60 text-yellow-500 px-3 py-1.5 rounded text-xs font-mono font-bold uppercase flex items-center gap-2">
+                    <span class="inline-block w-2 h-2 rounded-full bg-yellow-500"></span> IA: Aprendendo
+                </div>
+                <div class="bg-zinc-900 border border-purple-800/60 text-purple-400 px-3 py-1.5 rounded text-xs font-mono font-bold uppercase flex items-center gap-2">
+                    <span class="inline-block w-2 h-2 rounded-full bg-purple-500"></span> Armadilha Ativa
+                </div>
+                <button onclick="logout()" class="bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white px-3 py-1.5 rounded text-xs font-mono font-bold hover:bg-zinc-800 transition uppercase">Sair</button>
             </div>
         </header>
 
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10 text-center">
-            <div class="bg-zinc-900/50 p-4 border border-zinc-800">
-                <p class="text-zinc-500 text-[10px] font-bold mb-1">PACOTES</p>
-                <h2 id="stats-packets" class="text-3xl font-black text-white">0</h2>
+        <!-- CARDS DE MÉTRICAS -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="card-vault p-5 rounded-lg">
+                <p class="text-zinc-500 text-[10px] font-mono font-bold tracking-widest uppercase mb-1">Pacotes Analisados</p>
+                <h2 id="stats-packets" class="text-3xl font-black text-white font-mono">0</h2>
+                <span class="text-zinc-600 text-[10px] font-mono">Inspeção contínua Scapy</span>
             </div>
-            <div class="bg-zinc-900/50 p-4 border border-zinc-800">
-                <p class="text-zinc-500 text-[10px] font-bold mb-1">BLOQUEIOS</p>
-                <h2 id="stats-blocked" class="text-3xl font-black text-red-500">0</h2>
+            <div class="card-vault p-5 rounded-lg border-l-4 border-l-purple-500">
+                <p class="text-purple-400 text-[10px] font-mono font-bold tracking-widest uppercase mb-1">Invasores na Armadilha</p>
+                <div class="flex items-baseline gap-2">
+                    <h2 id="stats-trapped" class="text-3xl font-black text-purple-400 font-mono">0</h2>
+                    <span id="trapped-badge" class="text-[10px] font-mono text-zinc-500">Sondas silenciosas</span>
+                </div>
+                <span class="text-zinc-600 text-[10px] font-mono">Probes & Scanners Desmascarados</span>
             </div>
-            <div class="bg-zinc-900/50 p-4 border border-zinc-800">
-                <p class="text-zinc-500 text-[10px] font-bold mb-1">ATIVOS</p>
-                <h2 id="stats-active" class="text-3xl font-black text-green-500">0</h2>
+            <div class="card-vault p-5 rounded-lg border-l-4 border-l-emerald-500">
+                <p class="text-emerald-400 text-[10px] font-mono font-bold tracking-widest uppercase mb-1">Processos Conectados</p>
+                <h2 id="stats-outbound" class="text-3xl font-black text-emerald-400 font-mono">0</h2>
+                <span class="text-zinc-600 text-[10px] font-mono">Sockets de saída mapeados</span>
             </div>
-            <div class="bg-zinc-900/50 p-4 border border-zinc-800">
-                <p class="text-zinc-500 text-[10px] font-bold mb-1">ANOMALIAS</p>
-                <h2 id="stats-anomalies" class="text-3xl font-black text-purple-500">0</h2>
+            <div class="card-vault p-5 rounded-lg border-l-4 border-l-red-500">
+                <p class="text-red-400 text-[10px] font-mono font-bold tracking-widest uppercase mb-1">Digital Purgatory</p>
+                <h2 id="stats-blocked" class="text-3xl font-black text-red-500 font-mono">0</h2>
+                <span class="text-zinc-600 text-[10px] font-mono">IPs banidos no Netfilter</span>
             </div>
         </div>
 
-        <div class="bg-zinc-900/30 p-4 border border-zinc-800 mb-10">
-            <canvas id="trafficChart" height="80"></canvas>
+        <!-- GRÁFICO DE TRÁFEGO -->
+        <div class="card-vault p-4 rounded-lg mb-8">
+            <div class="flex justify-between items-center mb-2 px-2">
+                <h3 class="text-xs font-mono font-bold text-zinc-400 uppercase tracking-widest">Vazão de Pacotes // Tempo Real</h3>
+                <span class="text-[10px] font-mono text-zinc-500">Janela 40s</span>
+            </div>
+            <canvas id="trafficChart" height="55"></canvas>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
-            <div>
-                <h3 class="text-sm font-bold mb-4 uppercase text-red-600 tracking-widest">Digital Purgatory</h3>
-                <div id="blocked-list" class="space-y-3 max-h-[500px] overflow-y-auto"></div>
+        <!-- SEÇÃO 1: A ARMADILHA SILENCIOSA (INVASORES DESMASCARADOS) -->
+        <section class="mb-10">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+                <div>
+                    <h2 class="text-base font-black text-purple-400 font-mono tracking-wider uppercase flex items-center gap-2">
+                        <span>🕸️</span> Armadilha Silenciosa // Invasores Desmascarados
+                    </h2>
+                    <p class="text-zinc-500 text-xs font-mono mt-0.5">Sondas de entrada que tocaram na máquina e tiveram suas identidades e sistemas revelados.</p>
+                </div>
+                <button onclick="clearTrap()" class="text-zinc-500 hover:text-zinc-300 text-xs font-mono border border-zinc-800 hover:border-zinc-700 px-3 py-1 rounded transition">Limpar Registro</button>
             </div>
-            <div>
-                <h3 class="text-sm font-bold mb-4 uppercase text-green-600 tracking-widest">Active Radar</h3>
-                <div id="active-list" class="space-y-3 max-h-[500px] overflow-y-auto"></div>
+
+            <div id="trap-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[550px] overflow-y-auto p-1">
+                <p class="text-zinc-600 text-xs font-mono italic col-span-full py-8 text-center">Nenhum invasor detectado na armadilha no momento. O perímetro está seguro.</p>
             </div>
+        </section>
+
+        <!-- SEÇÃO 2: OUTBOUND MATRIX & PURGATÓRIO -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+            
+            <!-- TELEMETRIA DE PROCESSOS (QUEM ESTÁ CONECTADO) -->
+            <div>
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <h2 class="text-sm font-black text-emerald-400 font-mono tracking-wider uppercase flex items-center gap-2">
+                            <span>🛰️</span> Outbound Matrix // Processos do Host
+                        </h2>
+                        <p class="text-zinc-500 text-[11px] font-mono">Conexões ativas abertas por aplicativos na sua máquina.</p>
+                    </div>
+                </div>
+                <div id="process-list" class="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+                    <p class="text-zinc-600 text-xs font-mono italic">Aguardando telemetria de processos...</p>
+                </div>
+            </div>
+
+            <!-- PURGATÓRIO DIGITAL (BLOQUEIOS ATIVOS & FORM MANUAL) -->
+            <div>
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <h2 class="text-sm font-black text-red-500 font-mono tracking-wider uppercase flex items-center gap-2">
+                            <span>💀</span> Digital Purgatory // Sentenças Netfilter
+                        </h2>
+                        <p class="text-zinc-500 text-[11px] font-mono">IPs descartados imediatamente em nível de kernel (DROP).</p>
+                    </div>
+                </div>
+
+                <!-- Formulário de Bloqueio Manual -->
+                <div class="flex gap-2 mb-4">
+                    <input type="text" id="manual-ip-input" placeholder="Ex: 198.51.100.23" class="flex-1 bg-zinc-950 border border-zinc-800 p-2.5 text-xs text-white outline-none focus:border-red-500 font-mono rounded">
+                    <button onclick="handleManualBlock()" class="bg-red-700 hover:bg-red-600 text-white text-xs font-mono font-bold px-4 py-2.5 rounded transition uppercase">Banir IP</button>
+                </div>
+
+                <!-- Lista de Bloqueios -->
+                <div id="blocked-container" class="space-y-2 max-h-[345px] overflow-y-auto pr-1">
+                    <p class="text-zinc-600 text-xs font-mono italic">Nenhum IP no purgatório.</p>
+                </div>
+            </div>
+
         </div>
+
     </div>
 
+    <!-- JAVASCRIPT DE TELEMETRIA -->
     <script>
-        let chart;
+        let chart = null;
         let token = localStorage.getItem('shield_token');
 
         async function checkSetup() {
@@ -93,7 +192,6 @@
                 if(data.setup_required) {
                     document.getElementById('login-box').style.display = 'none';
                     document.getElementById('setup-box').style.display = 'block';
-                    document.getElementById('setup-box').style.borderColor = '#10b981';
                 } else if(token) {
                     showDashboard();
                 }
@@ -104,6 +202,7 @@
         async function performSetup() {
             const u = document.getElementById('setup-user').value;
             const p = document.getElementById('setup-pass').value;
+            if(!u || !p) { alert("Preencha usuário e senha."); return; }
             try {
                 const r = await fetch('/setup', {
                     method: 'POST',
@@ -113,26 +212,25 @@
                 const data = await r.json();
                 if(data.success) {
                     localStorage.setItem('shield_token', data.token);
-                    alert("Shield initialized successfully.");
                     location.reload();
                 }
-            } catch(e) { alert("Setup failed."); }
+            } catch(e) { alert("Falha na inicialização."); }
         }
 
         async function login() {
             const pass = document.getElementById('admin-pass').value;
+            if(!pass) return;
             try {
                 const r = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({user: 'admin', pass: pass}) // We bypass user check in backend if pass matches master key
+                    body: JSON.stringify({user: 'admin', pass: pass})
                 });
                 if(r.ok) {
                     const data = await r.json();
                     localStorage.setItem('shield_token', data.token);
                     showDashboard();
                 } else {
-                    // Fallback to old method for master bypass
                     localStorage.setItem('shield_token', pass);
                     showDashboard();
                 }
@@ -142,79 +240,224 @@
             }
         }
 
-        function logout() { localStorage.clear(); location.reload(); }
+        function logout() {
+            localStorage.clear();
+            location.reload();
+        }
 
         function showDashboard() {
             document.getElementById('auth-overlay').style.display = 'none';
             document.getElementById('dashboard-content').style.display = 'block';
-            setInterval(updateData, 3000);
+            setInterval(updateData, 2500);
             updateData();
         }
 
         async function updateData() {
             try {
-                const r = await fetch('/status', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('shield_token') }});
+                const r = await fetch('/status', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('shield_token') }
+                });
                 if(r.status === 401) { logout(); return; }
                 const data = await r.json();
 
-                document.getElementById('stats-packets').innerText = data.total_packets;
-                document.getElementById('stats-blocked').innerText = data.blocked_ips.length;
-                document.getElementById('stats-active').innerText = data.active_ips.length;
-                document.getElementById('stats-anomalies').innerText = data.anomalies;
+                // 1. Métricas principais
+                document.getElementById('stats-packets').innerText = data.total_packets.toLocaleString();
+                document.getElementById('stats-trapped').innerText = (data.trapped_intruders || []).length;
+                document.getElementById('stats-outbound').innerText = (data.outbound_conns || []).length;
+                document.getElementById('stats-blocked').innerText = (data.blocked_ips || []).length;
 
+                // 2. Badge de IA
                 const aiBadge = document.getElementById('ai-badge');
                 if(data.training) {
-                    aiBadge.innerText = "IA: ATIVA & PROTEGENDO";
-                    aiBadge.classList.replace('text-yellow-500', 'text-green-500');
-                    aiBadge.classList.replace('border-yellow-600', 'border-green-600');
+                    aiBadge.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span> IA: Protegendo';
+                    aiBadge.className = 'bg-zinc-900 border border-emerald-700/60 text-emerald-400 px-3 py-1.5 rounded text-xs font-mono font-bold uppercase flex items-center gap-2';
                 }
 
-                document.getElementById('blocked-list').innerHTML = data.blocked_ips.map(ip => `
-                    <div class="ip-card blocked p-3 rounded" oncontextmenu="unblockIP(event, '${ip}')">
-                        <span class="font-mono text-white font-bold">${ip}</span>
-                    </div>`).join('') || '<p class="text-zinc-800 text-xs italic">No threats found.</p>';
+                // 3. Renderiza Invasores da Armadilha Silenciosa
+                renderTrappedIntruders(data.trapped_intruders || []);
 
-                document.getElementById('active-list').innerHTML = data.active_ips.map(conn => `
-                    <div class="ip-card active p-3 rounded" oncontextmenu="blockIP(event, '${conn.split(' ')[0]}')">
-                        <span class="font-mono text-white text-xs">${conn}</span>
-                    </div>`).join('');
+                // 4. Renderiza Processos Conectados (Outbound)
+                renderOutboundProcesses(data.outbound_conns || []);
 
-                const ctx = document.getElementById('trafficChart').getContext('2d');
-                if (!chart) {
-                    chart = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: data.times,
-                            datasets: [{ label: 'Pkts', data: data.packets, borderColor: '#7800ff', backgroundColor: 'rgba(120,0,255,0.05)', fill: true, tension:0.4 }]
-                        },
-                        options: { responsive: true, animation: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } }
-                    });
-                } else {
-                    chart.data.labels = data.times;
-                    chart.data.datasets[0].data = data.packets;
-                    chart.update('none');
-                }
+                // 5. Renderiza Purgatório (Bloqueios)
+                renderBlockedIPs(data.blocked_ips || []);
+
+                // 6. Atualiza Gráfico
+                updateChart(data.times, data.packets);
+
             } catch(e) {}
         }
 
-        async function blockIP(e, ip) {
-            e.preventDefault();
-            if(!confirm(`Annihilate ${ip}?`)) return;
-            await fetch('/block_ip', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('shield_token') },
-                body: JSON.stringify({ip: ip})
-            });
+        function renderTrappedIntruders(intruders) {
+            const container = document.getElementById('trap-container');
+            if(!intruders || intruders.length === 0) {
+                container.innerHTML = '<p class="text-zinc-600 text-xs font-mono italic col-span-full py-8 text-center">Nenhum invasor detectado na armadilha no momento. O perímetro está seguro.</p>';
+                return;
+            }
+
+            container.innerHTML = intruders.map(i => {
+                const isBlocked = i.is_blocked;
+                const badgeColor = i.is_scanner ? 'bg-red-950/80 text-red-400 border-red-700' : 'bg-purple-950/80 text-purple-400 border-purple-700';
+                
+                return `
+                <div class="trap-card p-4 rounded-lg flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-mono font-bold text-white bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800">${i.ip}</span>
+                                <span class="text-[10px] font-mono text-zinc-400">${i.country || 'N/A'}</span>
+                            </div>
+                            <span class="text-[9px] font-mono uppercase px-2 py-0.5 rounded border ${badgeColor}">
+                                ${i.scanner_name || i.os_family}
+                            </span>
+                        </div>
+                        
+                        <div class="text-[11px] font-mono text-zinc-300 mb-1">
+                            <span class="text-purple-400 font-bold">Porta Alvo:</span> ${i.target_port} <span class="text-zinc-500">(${i.port_desc})</span>
+                        </div>
+
+                        <div class="text-[11px] font-mono text-zinc-400 mb-1">
+                            <span class="text-zinc-500">Provedor:</span> ${i.org || 'Buscando BGP...'}
+                        </div>
+
+                        <div class="text-[10px] font-mono text-zinc-500 mb-3">
+                            <span class="text-zinc-600">Assinatura:</span> ${i.signature || 'P0F/Raw'} | <span class="text-zinc-400">${i.formatted_time}</span>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 border-t border-purple-950/60 flex justify-between items-center">
+                        <span class="text-[10px] font-mono text-emerald-400">Capturado Silenciosamente</span>
+                        ${isBlocked ? 
+                            `<button onclick="unblockIP('${i.ip}')" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-mono font-bold px-2.5 py-1 rounded transition uppercase">Liberar</button>` :
+                            `<button onclick="blockIP('${i.ip}')" class="bg-red-900/80 hover:bg-red-800 text-red-200 text-[10px] font-mono font-bold px-2.5 py-1 rounded transition border border-red-700 uppercase">Purgar IP</button>`
+                        }
+                    </div>
+                </div>`;
+            }).join('');
         }
 
-        async function unblockIP(e, ip) {
-            e.preventDefault();
-            if(!confirm(`Release ${ip}?`)) return;
-            await fetch('/unblock_ip', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('shield_token') },
-                body: JSON.stringify({ip: ip})
-            });
+        function renderOutboundProcesses(conns) {
+            const container = document.getElementById('process-list');
+            if(!conns || conns.length === 0) {
+                container.innerHTML = '<p class="text-zinc-600 text-xs font-mono italic">Nenhum socket externo ativo.</p>';
+                return;
+            }
+
+            container.innerHTML = conns.map(c => `
+                <div class="card-vault p-3 rounded flex items-center justify-between text-xs font-mono">
+                    <div class="flex items-center gap-3">
+                        <span class="text-emerald-400 font-bold bg-zinc-950 px-2 py-1 rounded border border-zinc-800">${c.process}</span>
+                        <div>
+                            <span class="text-zinc-300">${c.remote}</span>
+                            <span class="text-zinc-500 text-[10px] block">${c.org ? '[' + c.org + ']' : ''}</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] text-zinc-500 uppercase">${c.proto} ${c.state}</span>
+                        <button onclick="blockIP('${c.remote_ip}')" title="Bloquear IP Remoto" class="text-zinc-600 hover:text-red-400 text-xs font-bold px-2 py-1 transition">🚫</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderBlockedIPs(blockedList) {
+            const container = document.getElementById('blocked-container');
+            if(!blockedList || blockedList.length === 0) {
+                container.innerHTML = '<p class="text-zinc-600 text-xs font-mono italic">Nenhum IP no purgatório.</p>';
+                return;
+            }
+
+            container.innerHTML = blockedList.map(item => {
+                const ip = typeof item === 'object' ? item.ip : item;
+                const company = typeof item === 'object' ? item.company : 'Bloqueado';
+                return `
+                <div class="card-vault border-l-2 border-l-red-500 p-3 rounded flex items-center justify-between text-xs font-mono">
+                    <div>
+                        <span class="font-bold text-red-400">${ip}</span>
+                        <span class="text-zinc-500 text-[10px] block">${company}</span>
+                    </div>
+                    <button onclick="unblockIP('${ip}')" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-mono px-3 py-1 rounded transition uppercase">Desbloquear</button>
+                </div>`;
+            }).join('');
+        }
+
+        function updateChart(times, packets) {
+            const ctx = document.getElementById('trafficChart').getContext('2d');
+            if (!chart) {
+                chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: times || [],
+                        datasets: [{
+                            label: 'Pacotes/s',
+                            data: packets || [],
+                            borderColor: '#8b5cf6',
+                            backgroundColor: 'rgba(139, 92, 246, 0.08)',
+                            fill: true,
+                            tension: 0.35,
+                            borderWidth: 2,
+                            pointRadius: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        animation: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { display: false },
+                            y: { display: false }
+                        }
+                    }
+                });
+            } else {
+                chart.data.labels = times || [];
+                chart.data.datasets[0].data = packets || [];
+                chart.update('none');
+            }
+        }
+
+        async function blockIP(ip) {
+            if(!ip || ip === '*' || ip === '127.0.0.1') return;
+            if(!confirm(`Executar DROP no Netfilter para: ${ip}?`)) return;
+            try {
+                await fetch('/block_ip', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('shield_token') },
+                    body: JSON.stringify({ip: ip})
+                });
+                updateData();
+            } catch(e) {}
+        }
+
+        async function unblockIP(ip) {
+            if(!confirm(`Liberar sentenças do Netfilter para: ${ip}?`)) return;
+            try {
+                await fetch('/unblock_ip', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('shield_token') },
+                    body: JSON.stringify({ip: ip})
+                });
+                updateData();
+            } catch(e) {}
+        }
+
+        async function handleManualBlock() {
+            const input = document.getElementById('manual-ip-input');
+            const ip = input.value.trim();
+            if(!ip) return;
+            await blockIP(ip);
+            input.value = '';
+        }
+
+        async function clearTrap() {
+            if(!confirm("Limpar o registro de invasores capturados?")) return;
+            try {
+                await fetch('/api/trap/clear', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('shield_token') }
+                });
+                updateData();
+            } catch(e) {}
         }
     </script>
 </body>

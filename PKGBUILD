@@ -1,7 +1,7 @@
 pkgname=archshield-pro
-pkgver=2.0.0
+pkgver=2.1.0
 pkgrel=1
-pkgdesc="Enterprise-grade Network Intrusion Detection and Prevention System (IDS/IPS)"
+pkgdesc="Enterprise-grade Network Intrusion Detection, Cyber Deception & Tripwire Prevention System (IDS/IPS)"
 arch=("x86_64")
 url="https://github.com/ViniciusPHDU20/ArchShield"
 license=("GPL3")
