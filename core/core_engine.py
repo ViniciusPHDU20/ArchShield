@@ -15,7 +15,7 @@ import subprocess
 import os
 import time
 from multiprocessing import Process, Queue
-from scapy.all import sniff, IP, TCP, UDP, DNS, DNSRR, Raw
+from scapy.all import sniff, IP, IPv6, TCP, UDP, DNS, DNSRR, Raw
 from core.intelligence import IntelligenceCore
 from core.firewall import FirewallManager
 from core.fingerprint import fingerprint_syn, describe_port
@@ -98,75 +98,114 @@ class CoreEngine:
         self.firewall.arm_ghost_ports([21, 22, 23, 445, 3389, 8080])
 
         p_sniffer = Process(target=self._sniffer_loop, daemon=True)
+        p_dns = Process(target=self._dns_loopback_sniffer, daemon=True)
         p_analyst = Process(target=self._analyst_loop, daemon=True)
         p_sniffer.start()
+        p_dns.start()
         p_analyst.start()
+
+    def _dns_loopback_sniffer(self):
+        """
+        Escuta consultas e respostas DNS no loopback (127.0.0.53 - systemd-resolved).
+        Mapeia instantaneamente todo domínio solicitado por qualquer app da máquina.
+        """
+        def _on_dns(pkt):
+            if DNS in pkt and pkt[DNS].qr == 1 and pkt[DNS].qd:
+                try:
+                    qname = pkt[DNS].qd.qname.decode('utf-8', errors='ignore').rstrip('.')
+                    if pkt[DNS].an:
+                        for i in range(pkt[DNS].ancount):
+                            an = pkt[DNS].an[i]
+                            if hasattr(an, 'rdata'):
+                                rdata_str = str(an.rdata)
+                                if rdata_str.startswith("b'") and rdata_str.endswith("'"):
+                                    rdata_str = rdata_str[2:-1]
+                                self.packet_queue.put({"type": "DNS_MAP", "ip": rdata_str, "domain": qname}, block=False)
+                except Exception:
+                    pass
+        try:
+            sniff(iface="lo", filter="udp port 53", prn=_on_dns, store=False)
+        except Exception as e:
+            logging.warning(f"Loopback DNS sniffer fallback: {e}")
 
     def _sniffer_loop(self):
         def _on_packet(pkt):
+            src = None
+            dst = None
+            ttl = 64
+            pkt_len = 0
+
             if IP in pkt:
-                try:
-                    src = pkt[IP].src
-                    dst = pkt[IP].dst
-                    ttl = pkt[IP].ttl
-                    pkt_len = len(pkt)
-                    proto = "OTHER"
-                    sport = 0
-                    dport = 0
-                    tcp_flags = ""
-                    tcp_win = 0
-                    tcp_options = []
+                src = pkt[IP].src
+                dst = pkt[IP].dst
+                ttl = pkt[IP].ttl
+                pkt_len = len(pkt)
+            elif IPv6 in pkt:
+                src = pkt[IPv6].src
+                dst = pkt[IPv6].dst
+                ttl = pkt[IPv6].hlim
+                pkt_len = len(pkt)
+            else:
+                return
 
-                    if TCP in pkt:
-                        proto = "TCP"
-                        sport = pkt[TCP].sport
-                        dport = pkt[TCP].dport
-                        tcp_flags = str(pkt[TCP].flags)
-                        tcp_win = pkt[TCP].window
-                        tcp_options = pkt[TCP].options or []
+            try:
+                proto = "OTHER"
+                sport = 0
+                dport = 0
+                tcp_flags = ""
+                tcp_win = 0
+                tcp_options = []
 
-                        # Extrai SNI (Nome do Site no handshake TLS)
-                        if dport == 443 and Raw in pkt:
-                            sni = extract_sni(bytes(pkt[Raw].load))
-                            if sni:
-                                self.packet_queue.put({"type": "DNS_MAP", "ip": dst, "domain": sni}, block=False)
+                if TCP in pkt:
+                    proto = "TCP"
+                    sport = pkt[TCP].sport
+                    dport = pkt[TCP].dport
+                    tcp_flags = str(pkt[TCP].flags)
+                    tcp_win = pkt[TCP].window
+                    tcp_options = pkt[TCP].options or []
 
-                    elif UDP in pkt:
-                        proto = "UDP"
-                        sport = pkt[UDP].sport
-                        dport = pkt[UDP].dport
+                    # Extrai SNI (Nome do Site no handshake TLS tanto IPv4 quanto IPv6)
+                    if dport == 443 and Raw in pkt:
+                        sni = extract_sni(bytes(pkt[Raw].load))
+                        if sni:
+                            self.packet_queue.put({"type": "DNS_MAP", "ip": dst, "domain": sni}, block=False)
 
-                        # Extrai Respostas DNS (Resolução IP -> Nome do Site)
-                        if (sport == 53 or dport == 53) and DNS in pkt:
-                            try:
-                                if pkt[DNS].qr == 1 and pkt[DNS].qd:
-                                    qname = pkt[DNS].qd.qname.decode('utf-8', errors='ignore').rstrip('.')
-                                    if pkt[DNS].an:
-                                        for i in range(pkt[DNS].ancount):
-                                            an = pkt[DNS].an[i]
-                                            if hasattr(an, 'rdata') and hasattr(an, 'type') and an.type in (1, 28):
-                                                self.packet_queue.put({"type": "DNS_MAP", "ip": str(an.rdata), "domain": qname}, block=False)
-                            except Exception:
-                                pass
+                elif UDP in pkt:
+                    proto = "UDP"
+                    sport = pkt[UDP].sport
+                    dport = pkt[UDP].dport
 
-                    self.packet_queue.put({
-                        "type": "PACKET",
-                        "src": src,
-                        "dst": dst,
-                        "proto": proto,
-                        "sport": sport,
-                        "dport": dport,
-                        "ttl": ttl,
-                        "len": pkt_len,
-                        "tcp_flags": tcp_flags,
-                        "tcp_win": tcp_win,
-                        "tcp_options": tcp_options,
-                        "is_inbound": (dst == self.local_ip)
-                    }, block=False)
-                except Exception:
-                    pass
+                    # Extrai Respostas DNS na interface física
+                    if (sport == 53 or dport == 53) and DNS in pkt:
+                        try:
+                            if pkt[DNS].qr == 1 and pkt[DNS].qd:
+                                qname = pkt[DNS].qd.qname.decode('utf-8', errors='ignore').rstrip('.')
+                                if pkt[DNS].an:
+                                    for i in range(pkt[DNS].ancount):
+                                        an = pkt[DNS].an[i]
+                                        if hasattr(an, 'rdata'):
+                                            self.packet_queue.put({"type": "DNS_MAP", "ip": str(an.rdata), "domain": qname}, block=False)
+                        except Exception:
+                            pass
 
-        sniff(iface=config.INTERFACE, filter="ip", prn=_on_packet, store=False)
+                self.packet_queue.put({
+                    "type": "PACKET",
+                    "src": src,
+                    "dst": dst,
+                    "proto": proto,
+                    "sport": sport,
+                    "dport": dport,
+                    "ttl": ttl,
+                    "len": pkt_len,
+                    "tcp_flags": tcp_flags,
+                    "tcp_win": tcp_win,
+                    "tcp_options": tcp_options,
+                    "is_inbound": (dst == self.local_ip)
+                }, block=False)
+            except Exception:
+                pass
+
+        sniff(iface=config.INTERFACE, filter="ip or ip6", prn=_on_packet, store=False)
 
     def _is_safe(self, ip: str, port: int) -> bool:
         if ip in self.dynamic_safe_ips:
