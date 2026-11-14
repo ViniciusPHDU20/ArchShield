@@ -4,6 +4,25 @@ use crate::rootkit_hunter::KernelIntegrityReport;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NotificationSettings {
+    pub enabled: bool,
+    pub notify_rootkit: bool,
+    pub notify_covert: bool,
+    pub notify_honeypot: bool,
+}
+
+impl Default for NotificationSettings {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            notify_rootkit: true,
+            notify_covert: true,
+            notify_honeypot: true,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IntruderEvent {
     pub ip: String,
     pub target_port: u16,
@@ -53,6 +72,7 @@ pub struct SystemStatus {
     pub time_history: Vec<String>,
     pub kernel_integrity: KernelIntegrityReport,
     pub covert_alerts: Vec<CovertAlert>,
+    pub notification_settings: NotificationSettings,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -63,6 +83,8 @@ pub enum IpcCommand {
     UnblockIp { ip: String },
     ClearTrap,
     RunKernelAudit,
+    GetNotificationSettings,
+    UpdateNotificationSettings { settings: NotificationSettings },
     Ping,
 }
 
@@ -72,6 +94,7 @@ pub enum IpcResponse {
     Success(serde_json::Value),
     Status(SystemStatus),
     KernelAudit(KernelIntegrityReport),
+    NotificationSettings(NotificationSettings),
     Ack,
     Pong,
     Error(String),

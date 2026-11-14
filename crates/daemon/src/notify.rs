@@ -1,8 +1,14 @@
 // language: Rust, file: crates/daemon/src/notify.rs, runtime: tokio, target: Linux
+use archshield_core::NotificationSettings;
 use std::process::Command;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::SystemTime;
 use tracing::info;
+
+static NOTIFY_ENABLED: AtomicBool = AtomicBool::new(true);
+static NOTIFY_ROOTKIT: AtomicBool = AtomicBool::new(true);
+static NOTIFY_COVERT: AtomicBool = AtomicBool::new(true);
+static NOTIFY_HONEYPOT: AtomicBool = AtomicBool::new(true);
 
 static LAST_INTRUSION_ALERT: AtomicU64 = AtomicU64::new(0);
 static LAST_COVERT_ALERT: AtomicU64 = AtomicU64::new(0);
@@ -14,6 +20,18 @@ const ALERT_COOLDOWN_SECS: u64 = 300;
 pub struct Notifier;
 
 impl Notifier {
+    /// Sincroniza as preferências do usuário nos registradores atômicos em tempo real
+    pub fn sync_settings(settings: &NotificationSettings) {
+        NOTIFY_ENABLED.store(settings.enabled, Ordering::Relaxed);
+        NOTIFY_ROOTKIT.store(settings.notify_rootkit, Ordering::Relaxed);
+        NOTIFY_COVERT.store(settings.notify_covert, Ordering::Relaxed);
+        NOTIFY_HONEYPOT.store(settings.notify_honeypot, Ordering::Relaxed);
+        info!(
+            "🔔 [NOTIFY-CONFIG] Preferências atualizadas: Geral={}, Rootkits={}, Covert={}, Honeypot={}",
+            settings.enabled, settings.notify_rootkit, settings.notify_covert, settings.notify_honeypot
+        );
+    }
+
     fn current_timestamp() -> u64 {
         SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
@@ -23,6 +41,10 @@ impl Notifier {
 
     /// Alerta de Rootkit em Ring 0 (Severidade Máxima: LKMs ocultos ou processos DKOM)
     pub fn alert_rootkit(details: &str) {
+        if !NOTIFY_ENABLED.load(Ordering::Relaxed) || !NOTIFY_ROOTKIT.load(Ordering::Relaxed) {
+            return;
+        }
+
         let now = Self::current_timestamp();
         let last = LAST_ROOTKIT_ALERT.load(Ordering::Relaxed);
         if now.saturating_sub(last) < ALERT_COOLDOWN_SECS {
@@ -36,6 +58,10 @@ impl Notifier {
 
     /// Alerta de Exfiltração de Dados / DNS Tunneling ou Canal Encoberto
     pub fn alert_covert(details: &str) {
+        if !NOTIFY_ENABLED.load(Ordering::Relaxed) || !NOTIFY_COVERT.load(Ordering::Relaxed) {
+            return;
+        }
+
         let now = Self::current_timestamp();
         let last = LAST_COVERT_ALERT.load(Ordering::Relaxed);
         if now.saturating_sub(last) < ALERT_COOLDOWN_SECS {
@@ -49,6 +75,10 @@ impl Notifier {
 
     /// Alerta de Bloqueio Ativo (Apenas quando um atacante agressivo é ativamente isolado no Netfilter)
     pub fn alert_blocked_attacker(ip: &str, reason: &str) {
+        if !NOTIFY_ENABLED.load(Ordering::Relaxed) || !NOTIFY_HONEYPOT.load(Ordering::Relaxed) {
+            return;
+        }
+
         let now = Self::current_timestamp();
         let last = LAST_INTRUSION_ALERT.load(Ordering::Relaxed);
         if now.saturating_sub(last) < ALERT_COOLDOWN_SECS {

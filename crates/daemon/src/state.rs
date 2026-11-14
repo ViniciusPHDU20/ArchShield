@@ -1,6 +1,8 @@
 // language: Rust, file: crates/daemon/src/state.rs, runtime: tokio, target: Linux
+use crate::notify::Notifier;
 use archshield_core::{
-    ConnectionInfo, CovertAlert, IntruderEvent, KernelIntegrityReport, RootkitHunter, SystemStatus,
+    ConnectionInfo, CovertAlert, IntruderEvent, KernelIntegrityReport, NotificationSettings,
+    RootkitHunter, SystemStatus,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -13,6 +15,8 @@ use tokio::sync::RwLock;
 pub struct PersistentData {
     pub total_packets: u64,
     pub trapped_intruders: Vec<IntruderEvent>,
+    #[serde(default)]
+    pub notification_settings: NotificationSettings,
 }
 
 pub struct SystemState {
@@ -25,6 +29,7 @@ pub struct SystemState {
     pub current_second_packets: AtomicU64,
     pub covert_alerts: Vec<CovertAlert>,
     pub kernel_report: KernelIntegrityReport,
+    pub notification_settings: NotificationSettings,
 }
 
 impl SystemState {
@@ -42,11 +47,13 @@ impl SystemState {
 
         let mut initial_packets = 0;
         let mut initial_intruders = Vec::new();
+        let mut initial_notify = NotificationSettings::default();
 
         if let Ok(content) = std::fs::read_to_string(&state_path) {
             if let Ok(data) = serde_json::from_str::<PersistentData>(&content) {
                 initial_packets = data.total_packets;
                 initial_intruders = data.trapped_intruders;
+                initial_notify = data.notification_settings;
                 tracing::info!(
                     "💾 [PERSISTÊNCIA] Estado recuperado de {:?}: {} pacotes acumulados, {} intrusos em histórico",
                     state_path,
@@ -55,6 +62,8 @@ impl SystemState {
                 );
             }
         }
+
+        Notifier::sync_settings(&initial_notify);
 
         Self {
             total_packets: AtomicU64::new(initial_packets),
@@ -66,6 +75,7 @@ impl SystemState {
             current_second_packets: AtomicU64::new(0),
             covert_alerts: Vec::new(),
             kernel_report: initial_kernel_report,
+            notification_settings: initial_notify,
         }
     }
 
@@ -74,6 +84,7 @@ impl SystemState {
         let data = PersistentData {
             total_packets: self.total_packets.load(Ordering::Relaxed),
             trapped_intruders: self.trapped_intruders.clone(),
+            notification_settings: self.notification_settings.clone(),
         };
 
         if let Ok(json) = serde_json::to_string_pretty(&data) {
@@ -280,7 +291,14 @@ impl SystemState {
             time_history: self.time_history.clone(),
             kernel_integrity: self.kernel_report.clone(),
             covert_alerts: self.covert_alerts.clone(),
+            notification_settings: self.notification_settings.clone(),
         }
+    }
+
+    pub fn update_notification_settings(&mut self, settings: NotificationSettings) {
+        Notifier::sync_settings(&settings);
+        self.notification_settings = settings;
+        self.save_persistent();
     }
 }
 

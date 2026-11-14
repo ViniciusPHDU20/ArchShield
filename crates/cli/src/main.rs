@@ -227,8 +227,35 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 other => println!("{:?}", other),
             }
         }
+        "notify" => {
+            if args.len() == 2 || args[2] == "status" {
+                match send_command(&IpcCommand::GetNotificationSettings).await? {
+                    IpcResponse::NotificationSettings(cfg) => {
+                        println!("\x1b[1;36m🔔 PREFERÊNCIAS DE NOTIFICAÇÃO NATIVA (DESKTOP):\x1b[0m");
+                        println!("   Notificações Globais: {}", if cfg.enabled { "\x1b[1;32mATIVADO\x1b[0m" } else { "\x1b[1;31mDESATIVADO\x1b[0m" });
+                        println!("   Alertas de Ring 0 (Rootkits/DKOM): {}", if cfg.notify_rootkit { "\x1b[1;32mATIVADO\x1b[0m" } else { "\x1b[1;31mDESATIVADO\x1b[0m" });
+                        println!("   Canais Encobertos (DNS Tunneling): {}", if cfg.notify_covert { "\x1b[1;32mATIVADO\x1b[0m" } else { "\x1b[1;31mDESATIVADO\x1b[0m" });
+                        println!("   Intrusos Isolados na Armadilha: {}", if cfg.notify_honeypot { "\x1b[1;32mATIVADO\x1b[0m" } else { "\x1b[1;31mDESATIVADO\x1b[0m" });
+                    }
+                    other => println!("{:?}", other),
+                }
+            } else if args[2] == "on" || args[2] == "off" {
+                let enabled = args[2] == "on";
+                let mut settings = match send_command(&IpcCommand::GetNotificationSettings).await? {
+                    IpcResponse::NotificationSettings(cfg) => cfg,
+                    _ => archshield_core::NotificationSettings::default(),
+                };
+                settings.enabled = enabled;
+                match send_command(&IpcCommand::UpdateNotificationSettings { settings }).await? {
+                    IpcResponse::Ack => println!("\x1b[1;32m🔔 Notificações desktop {}\x1b[0m", if enabled { "ativadas com sucesso!" } else { "completamente silenciadas!" }),
+                    other => println!("{:?}", other),
+                }
+            } else {
+                eprintln!("Uso: archshield-ctl notify [status|on|off]");
+            }
+        }
         _ => {
-            eprintln!("Uso: archshield-ctl [status|watch|audit|json|block <ip>|unblock <ip>|clear|ping]");
+            eprintln!("Uso: archshield-ctl [status|watch|audit|json|block <ip>|unblock <ip>|clear|notify [status|on|off]|ping]");
         }
     }
 

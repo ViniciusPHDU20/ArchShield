@@ -287,9 +287,158 @@
             max-width: 24rem;
             width: 100%;
         }
+
+        /* MODAL DE NOTIFICAÇÕES & PREFERÊNCIAS */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 16px;
+        }
+        .modal-card {
+            background: #111116;
+            border: 1px solid #3f3f46;
+            box-shadow: 0 0 35px rgba(139, 92, 246, 0.25);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 520px;
+            padding: 24px;
+        }
+
+        /* TOGGLE SWITCHES NATIVOS */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #27272a;
+            transition: .25s;
+            border-radius: 24px;
+            border: 1px solid #3f3f46;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #a1a1aa;
+            transition: .25s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #7c3aed;
+            border-color: #a78bfa;
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+        }
+        input:checked + .slider:before {
+            transform: translateX(20px);
+            background-color: #ffffff;
+        }
+        input:disabled + .slider {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
+
+    <!-- MODAL DE NOTIFICAÇÕES -->
+    <div id="notify-modal" class="modal-overlay" onclick="if(event.target === this) toggleNotifyModal()">
+        <div class="modal-card">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-zinc-800">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">🔔</span>
+                    <h3 class="text-base font-black tracking-tight text-white uppercase font-mono">Central de Notificações</h3>
+                </div>
+                <button onclick="toggleNotifyModal()" class="text-zinc-500 hover:text-white font-mono text-xs px-2 py-1 rounded border border-zinc-800">✕ FECHAR</button>
+            </div>
+
+            <p class="text-zinc-400 text-xs mb-5 font-mono">
+                Controle o despacho de popups na sua área de trabalho (Wayland/X11). As preferências são gravadas em hardware e persistidas automaticamente entre reboots.
+            </p>
+
+            <div class="flex flex-col gap-3.5">
+                <!-- MASTER TOGGLE -->
+                <div class="flex items-center justify-between p-3.5 rounded-lg bg-zinc-950 border border-purple-900/60 shadow-inner">
+                    <div>
+                        <div class="text-xs font-bold text-white font-mono flex items-center gap-2">
+                            <span>📢</span> Notificações no Desktop
+                        </div>
+                        <div class="text-[11px] text-zinc-400 font-mono mt-0.5">Interruptor Geral: Silencia ou ativa todos os alertas visuais.</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="toggle-notify-master" onchange="onNotificationConfigChange()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <!-- ROOTKIT & RING 0 -->
+                <div class="flex items-center justify-between p-3 rounded-lg bg-zinc-900/60 border border-zinc-800">
+                    <div>
+                        <div class="text-xs font-bold text-zinc-200 font-mono flex items-center gap-2">
+                            <span>💀</span> Alertas de Ring 0 (Kernel / Rootkits)
+                        </div>
+                        <div class="text-[11px] text-zinc-500 font-mono mt-0.5">Módulos LKM desvinculados e processos camuflados via DKOM.</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="toggle-notify-rootkit" onchange="onNotificationConfigChange()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <!-- COVERT CHANNELS / DNS -->
+                <div class="flex items-center justify-between p-3 rounded-lg bg-zinc-900/60 border border-zinc-800">
+                    <div>
+                        <div class="text-xs font-bold text-zinc-200 font-mono flex items-center gap-2">
+                            <span>⚠️</span> Exfiltração & DNS Tunneling
+                        </div>
+                        <div class="text-[11px] text-zinc-500 font-mono mt-0.5">Canais furtivos com alta entropia de Shannon (H &gt; 3.8).</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="toggle-notify-covert" onchange="onNotificationConfigChange()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <!-- HONEYPOT / INTRUDERS -->
+                <div class="flex items-center justify-between p-3 rounded-lg bg-zinc-900/60 border border-zinc-800">
+                    <div>
+                        <div class="text-xs font-bold text-zinc-200 font-mono flex items-center gap-2">
+                            <span>🛡️</span> Intrusos Isolados no Netfilter
+                        </div>
+                        <div class="text-[11px] text-zinc-500 font-mono mt-0.5">Aviso visual ao banir sondas ativas nas portas fantasma.</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="toggle-notify-honeypot" onchange="onNotificationConfigChange()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="mt-5 pt-3.5 border-t border-zinc-800/80 flex items-center justify-between">
+                <span id="notify-save-status" class="text-[11px] font-mono text-emerald-400">✓ Sincronizado com Kernel</span>
+                <button onclick="toggleNotifyModal()" class="bg-purple-900/80 hover:bg-purple-800 text-purple-200 px-4 py-1.5 rounded font-mono text-xs font-bold transition">Concluído</button>
+            </div>
+        </div>
+    </div>
 
     <!-- OVERLAY DE AUTENTICAÇÃO (SE NECESSÁRIO EM SERVIDOR WEB) -->
     <div id="auth-overlay">
@@ -320,9 +469,9 @@
                 <div id="ai-badge" class="bg-zinc-900 border text-emerald-400 px-3 py-1.5 rounded text-xs font-mono font-bold uppercase flex items-center gap-2">
                     <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span> RUST 0-PORT // ARMED
                 </div>
-                <div class="bg-zinc-900 border text-purple-400 px-3 py-1.5 rounded text-xs font-mono font-bold uppercase flex items-center gap-2">
-                    <span class="inline-block w-2 h-2 rounded-full bg-purple-500"></span> Armadilha Ativa
-                </div>
+                <button onclick="toggleNotifyModal()" id="btn-notify-header" class="bg-zinc-900 border text-purple-300 hover:text-white px-3 py-1.5 rounded text-xs font-mono font-bold transition uppercase flex items-center gap-1.5">
+                    <span id="notify-header-icon">🔔</span> Notificações
+                </button>
                 <button onclick="clearTrap()" class="bg-zinc-900 border text-zinc-400 hover:text-white px-3 py-1.5 rounded text-xs font-mono font-bold transition uppercase">Limpar Registro</button>
             </div>
         </header>
@@ -495,11 +644,86 @@
             cachedTrappedIntruders = data.trapped_intruders || [];
             cachedOutboundConns = data.outbound_conns || [];
 
+            if (data.notification_settings) {
+                currentNotificationSettings = data.notification_settings;
+                updateNotificationUI(data.notification_settings);
+            }
+
             applyTrapFilter();
             applyOutboundFilter();
             renderBlockedIPs(data.blocked_ips || []);
             updateChart(data.time_history || data.times, data.traffic_history || data.packets);
         };
+
+        let currentNotificationSettings = {
+            enabled: true,
+            notify_rootkit: true,
+            notify_covert: true,
+            notify_honeypot: true
+        };
+
+        function toggleNotifyModal() {
+            const modal = document.getElementById('notify-modal');
+            if (!modal) return;
+            const isVisible = modal.style.display === 'flex';
+            modal.style.display = isVisible ? 'none' : 'flex';
+        }
+
+        function onNotificationConfigChange() {
+            const master = document.getElementById('toggle-notify-master').checked;
+            const rootkit = document.getElementById('toggle-notify-rootkit').checked;
+            const covert = document.getElementById('toggle-notify-covert').checked;
+            const honeypot = document.getElementById('toggle-notify-honeypot').checked;
+
+            currentNotificationSettings = {
+                enabled: master,
+                notify_rootkit: rootkit,
+                notify_covert: covert,
+                notify_honeypot: honeypot
+            };
+
+            updateNotificationUI(currentNotificationSettings);
+
+            // Despacha ação para o backend IPC
+            window.archshieldAction('update_notify_settings', JSON.stringify(currentNotificationSettings));
+            
+            const statusLabel = document.getElementById('notify-save-status');
+            if (statusLabel) {
+                statusLabel.innerText = "✓ Salvo em /var/lib/archshield";
+                setTimeout(() => { if (statusLabel) statusLabel.innerText = "✓ Sincronizado com Kernel"; }, 2000);
+            }
+        }
+
+        function updateNotificationUI(settings) {
+            if (!settings) return;
+            const master = document.getElementById('toggle-notify-master');
+            const rootkit = document.getElementById('toggle-notify-rootkit');
+            const covert = document.getElementById('toggle-notify-covert');
+            const honeypot = document.getElementById('toggle-notify-honeypot');
+            const headerBtn = document.getElementById('btn-notify-header');
+            const headerIcon = document.getElementById('notify-header-icon');
+
+            if (master && document.activeElement !== master) master.checked = !!settings.enabled;
+            if (rootkit && document.activeElement !== rootkit) rootkit.checked = !!settings.notify_rootkit;
+            if (covert && document.activeElement !== covert) covert.checked = !!settings.notify_covert;
+            if (honeypot && document.activeElement !== honeypot) honeypot.checked = !!settings.notify_honeypot;
+
+            // Desabilita opções filhas se o master estiver desligado
+            if (rootkit) rootkit.disabled = !settings.enabled;
+            if (covert) covert.disabled = !settings.enabled;
+            if (honeypot) honeypot.disabled = !settings.enabled;
+
+            if (headerIcon) {
+                headerIcon.innerText = settings.enabled ? '🔔' : '🔕';
+            }
+            if (headerBtn) {
+                if (settings.enabled) {
+                    headerBtn.className = "bg-zinc-900 border text-purple-300 hover:text-white px-3 py-1.5 rounded text-xs font-mono font-bold transition uppercase flex items-center gap-1.5";
+                } else {
+                    headerBtn.className = "bg-zinc-900 border text-zinc-500 hover:text-zinc-300 px-3 py-1.5 rounded text-xs font-mono font-bold transition uppercase flex items-center gap-1.5 opacity-60";
+                }
+            }
+        }
 
         function setOutboundTag(tag) {
             currentOutboundTag = tag.toLowerCase();

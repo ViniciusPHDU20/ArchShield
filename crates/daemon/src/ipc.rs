@@ -104,6 +104,14 @@ impl IpcServer {
                 state.write().await.update_kernel_report(report.clone());
                 IpcResponse::KernelAudit(report)
             }
+            IpcCommand::GetNotificationSettings => {
+                let settings = state.read().await.notification_settings.clone();
+                IpcResponse::NotificationSettings(settings)
+            }
+            IpcCommand::UpdateNotificationSettings { settings } => {
+                state.write().await.update_notification_settings(settings);
+                IpcResponse::Ack
+            }
             IpcCommand::GetStatus => {
                 let mut conns = ProcessTracker::get_active_connections();
                 let blocked = FirewallManager::get_active_blocks();

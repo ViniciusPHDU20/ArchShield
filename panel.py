@@ -98,6 +98,12 @@ class SovereignPanel(QMainWindow):
                 query_ipc({"cmd": "UnblockIp", "payload": {"ip": param}})
             elif action == "clear":
                 query_ipc({"cmd": "ClearTrap", "payload": None})
+            elif action == "update_notify_settings" and param:
+                try:
+                    settings_obj = json.loads(param)
+                    query_ipc({"cmd": "UpdateNotificationSettings", "payload": {"settings": settings_obj}})
+                except Exception:
+                    pass
 
             # Restaura título padrão
             self.browser.page().runJavaScript("document.title = 'ArchShield PRO - Sovereign Tripwire & Deception Panel (0 Ports)';")
