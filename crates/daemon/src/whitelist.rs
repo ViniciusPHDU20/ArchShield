@@ -41,6 +41,10 @@ impl Whitelist {
                         || v4 == Ipv4Addr::new(1, 0, 0, 1)
                         || v4 == Ipv4Addr::new(9, 9, 9, 9)
                         || v4 == Ipv4Addr::new(149, 112, 112, 112)
+                        || v4 == Ipv4Addr::new(94, 140, 14, 14)
+                        || v4 == Ipv4Addr::new(94, 140, 15, 15)
+                        || v4 == Ipv4Addr::new(94, 140, 14, 140)
+                        || v4 == Ipv4Addr::new(94, 140, 14, 141)
                     {
                         return true;
                     }
@@ -88,6 +92,10 @@ impl Whitelist {
                     }
                     // Cloudflare IPv6 (2606:4700::/32)
                     if segs[0] == 0x2606 && segs[1] == 0x4700 {
+                        return true;
+                    }
+                    // AdGuard IPv6 (2a10:50c0::/32)
+                    if segs[0] == 0x2a10 && segs[1] == 0x50c0 {
                         return true;
                     }
                 }
