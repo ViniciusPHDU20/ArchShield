@@ -17,7 +17,7 @@ impl ThreatFeeds {
             let mut interval = tokio::time::interval(Duration::from_secs(43200)); // 12 horas
             loop {
                 interval.tick().await;
-                info!("🌐 [THREAT-INTEL] Verificando feeds globais de elite (Spamhaus DROP & Abuse.ch Feodo)...");
+                info!("🌐 [THREAT-INTEL] Verificando feeds globais de elite (Spamhaus DROP, Abuse.ch Feodo & Tor Exit Nodes)...");
                 Self::sync_feeds(dry_run);
             }
         });
@@ -79,6 +79,24 @@ impl ThreatFeeds {
             info!("📥 [THREAT-INTEL] Feed Spamhaus DROP carregado: {} sub-redes hostis", count);
         } else {
             warn!("⚠️ [THREAT-INTEL] Falha temporária ao baixar Spamhaus DROP");
+        }
+
+        // 3. Tor Bulk Exit List (Nós de Saída Anônimos Oficiais do Tor Project)
+        if let Some(content) = Self::download_feed("https://check.torproject.org/torbulkexitlist") {
+            let mut count = 0;
+            for line in content.lines() {
+                let trimmed = line.trim();
+                if trimmed.is_empty() || trimmed.starts_with('#') {
+                    continue;
+                }
+                if !Whitelist::is_whitelisted(trimmed) {
+                    valid_entries.push(trimmed.to_string());
+                    count += 1;
+                }
+            }
+            info!("📥 [THREAT-INTEL] Feed Tor Exit Nodes carregado: {} nós anônimos", count);
+        } else {
+            warn!("⚠️ [THREAT-INTEL] Falha temporária ao baixar Tor Exit Nodes");
         }
 
         if !valid_entries.is_empty() {
