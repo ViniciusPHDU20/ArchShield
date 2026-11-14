@@ -1,0 +1,9 @@
+[package]
+name = "archshield-core"
+version = "2.1.0"
+edition = "2021"
+description = "Core types, passive fingerprinting heuristics, and IPC protocol for ArchShield"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"

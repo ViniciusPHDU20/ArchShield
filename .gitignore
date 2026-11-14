@@ -23,3 +23,6 @@ sniper_filter.py
 sovereign_*.py
 trinity_*.py
 
+
+# Rust Build Artifacts
+target/

@@ -1,0 +1,17 @@
+[package]
+name = "archshield-daemon"
+version = "2.1.0"
+edition = "2021"
+description = "Sovereign Low-Level Linux Intrusion Prevention & Cyber Deception Daemon (0-port UNIX IPC)"
+
+[dependencies]
+archshield-core = { path = "../core" }
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+pnet_packet = "0.35"
+socket2 = "0.5"
+libc = "0.2"
+ctrlc = "3.4"
+tracing = "0.1"
+tracing-subscriber = "0.3"

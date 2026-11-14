@@ -287,7 +287,42 @@
             updateData();
         }
 
+        window.archshieldAction = function(action, param) {
+            document.title = 'ARCHSHIELD_ACTION:' + action + ':' + (param || '');
+        };
+
+        window.renderFromNative = function(data) {
+            if(!data) return;
+            const authOverlay = document.getElementById('auth-overlay');
+            if(authOverlay && authOverlay.style.display !== 'none') {
+                authOverlay.style.display = 'none';
+                document.getElementById('dashboard-content').style.display = 'block';
+            }
+
+            if(data.total_packets !== undefined) {
+                document.getElementById('stats-packets').innerText = Number(data.total_packets).toLocaleString();
+            }
+            document.getElementById('stats-trapped').innerText = (data.trapped_intruders || []).length;
+            document.getElementById('stats-outbound').innerText = (data.outbound_conns || []).length;
+            document.getElementById('stats-blocked').innerText = (data.blocked_ips || []).length;
+
+            const aiBadge = document.getElementById('ai-badge');
+            if(aiBadge) {
+                aiBadge.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span> RUST 0-PORT // ARMED';
+                aiBadge.className = 'bg-zinc-900 border border-emerald-700/60 text-emerald-400 px-3 py-1.5 rounded text-xs font-mono font-bold uppercase flex items-center gap-2';
+            }
+
+            cachedTrappedIntruders = data.trapped_intruders || [];
+            cachedOutboundConns = data.outbound_conns || [];
+
+            applyTrapFilter();
+            applyOutboundFilter();
+            renderBlockedIPs(data.blocked_ips || []);
+            updateChart(data.time_history || data.times, data.traffic_history || data.packets);
+        };
+
         async function updateData() {
+            if(window.isNativeDesktop) return; // No modo desktop nativo, atualizações chegam via renderFromNative
             try {
                 const r = await fetch('/status', {
                     headers: { 'Authorization': 'Bearer ' + localStorage.getItem('shield_token') }
@@ -550,6 +585,10 @@
         async function blockIP(ip) {
             if(!ip || ip === '*' || ip === '127.0.0.1') return;
             if(!confirm(`Executar DROP no Netfilter para: ${ip}?`)) return;
+            if(window.isNativeDesktop) {
+                window.archshieldAction('block', ip);
+                return;
+            }
             try {
                 await fetch('/block_ip', {
                     method: 'POST',
@@ -562,6 +601,10 @@
 
         async function unblockIP(ip) {
             if(!confirm(`Liberar sentenças do Netfilter para: ${ip}?`)) return;
+            if(window.isNativeDesktop) {
+                window.archshieldAction('unblock', ip);
+                return;
+            }
             try {
                 await fetch('/unblock_ip', {
                     method: 'POST',
@@ -582,6 +625,10 @@
 
         async function clearTrap() {
             if(!confirm("Limpar o registro de invasores capturados?")) return;
+            if(window.isNativeDesktop) {
+                window.archshieldAction('clear', '');
+                return;
+            }
             try {
                 await fetch('/api/trap/clear', {
                     method: 'POST',

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# language: Bash, file: archshield-panel, target: Linux
+BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export PYTHONUNBUFFERED=1
+exec python3 "$BASE_DIR/panel.py" "$@"
