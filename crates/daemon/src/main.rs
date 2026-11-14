@@ -2,14 +2,17 @@
 mod config;
 mod conntrack;
 mod dns;
+mod feeds;
 mod firewall;
 mod ipc;
 mod sniffer;
 mod sni;
 mod state;
+mod whitelist;
 
 use config::DaemonConfig;
 use dns::DnsSniffer;
+use feeds::ThreatFeeds;
 use firewall::FirewallManager;
 use ipc::IpcServer;
 use sniffer::PacketSniffer;
@@ -114,6 +117,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             persist_state.read().await.save_persistent();
         }
     });
+
+    // 7. Sincronizador de Inteligência de Ameaças Globais (Spamhaus DROP & Abuse.ch)
+    ThreatFeeds::start(config.dry_run).await;
 
     info!("🚀 [DAEMON-ONLINE] ArchShield Sovereign Daemon operacional com sucesso!");
 

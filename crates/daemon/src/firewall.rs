@@ -1,4 +1,5 @@
 // language: Rust, file: crates/daemon/src/firewall.rs, runtime: tokio, target: Linux
+use crate::whitelist::Whitelist;
 use std::process::Command;
 use tracing::info;
 
@@ -21,26 +22,37 @@ impl FirewallManager {
     }
 
     pub fn init_engine() {
-        // Inicializa tabela atômica inet archshield no nftables com O(1) hash sets
+        // Inicializa tabela atômica inet archshield no nftables com O(1) hash sets e suporte a CIDR
         Self::run_cmd("nft", &["add", "table", "inet", "archshield"]);
-        Self::run_cmd("nft", &["add", "set", "inet", "archshield", "blacklist_v4", "{", "type", "ipv4_addr;", "}"]);
-        Self::run_cmd("nft", &["add", "set", "inet", "archshield", "blacklist_v6", "{", "type", "ipv6_addr;", "}"]);
+        Self::run_cmd("nft", &["add", "set", "inet", "archshield", "blacklist_v4", "{", "type", "ipv4_addr;", "flags", "interval;", "}"]);
+        Self::run_cmd("nft", &["add", "set", "inet", "archshield", "blacklist_v6", "{", "type", "ipv6_addr;", "flags", "interval;", "}"]);
         Self::run_cmd("nft", &["add", "chain", "inet", "archshield", "input", "{", "type", "filter", "hook", "input", "priority", "-100;", "policy", "accept;", "}"]);
         Self::run_cmd("nft", &["add", "chain", "inet", "archshield", "output", "{", "type", "filter", "hook", "output", "priority", "-100;", "policy", "accept;", "}"]);
 
-        // Regras de drop para as blacklists
+        // Regras de garantia: Tráfego legítimo, loopback e sessões ativas (conntrack established) NUNCA são bloqueados
+        Self::run_cmd("nft", &["add", "rule", "inet", "archshield", "input", "iifname", "lo", "accept"]);
+        Self::run_cmd("nft", &["add", "rule", "inet", "archshield", "input", "ct", "state", "established,related", "accept"]);
+        Self::run_cmd("nft", &["add", "rule", "inet", "archshield", "output", "oifname", "lo", "accept"]);
+        Self::run_cmd("nft", &["add", "rule", "inet", "archshield", "output", "ct", "state", "established,related", "accept"]);
+
+        // Regras de drop para as blacklists (apenas novos fluxos de atacantes)
         Self::run_cmd("nft", &["add", "rule", "inet", "archshield", "input", "ip", "saddr", "@blacklist_v4", "drop"]);
         Self::run_cmd("nft", &["add", "rule", "inet", "archshield", "input", "ip6", "saddr", "@blacklist_v6", "drop"]);
         Self::run_cmd("nft", &["add", "rule", "inet", "archshield", "output", "ip", "daddr", "@blacklist_v4", "drop"]);
         Self::run_cmd("nft", &["add", "rule", "inet", "archshield", "output", "ip6", "daddr", "@blacklist_v6", "drop"]);
 
-        info!("⚡ [KERNEL-NFTABLES] Tabela atômica O(1) ativada com sucesso");
+        info!("⚡ [KERNEL-NFTABLES] Tabela atômica O(1) e motor de whitelist ativados com sucesso");
     }
 
     pub fn block_ip(ip: &str, dry_run: bool) -> bool {
         if dry_run {
             info!("🛡️ [DRY-RUN] Simulação de bloqueio no Netfilter: {}", ip);
             return true;
+        }
+
+        if Whitelist::is_whitelisted(ip) {
+            info!("🛡️ [WHITELIST] Bloqueio cancelado para IP/Subnet protegido: {}", ip);
+            return false;
         }
 
         let is_v6 = ip.contains(':');
@@ -57,6 +69,39 @@ impl FirewallManager {
         let in_res = Self::run_cmd("iptables", &["-I", "INPUT", "-s", ip, "-j", "DROP"]);
         let out_res = Self::run_cmd("iptables", &["-I", "OUTPUT", "-d", ip, "-j", "DROP"]);
         in_res && out_res
+    }
+
+    pub fn block_batch(entries: &[String], dry_run: bool) {
+        if dry_run {
+            info!("🛡️ [DRY-RUN] Simulação de inserção em lote de {} entradas", entries.len());
+            return;
+        }
+
+        let mut v4_entries = Vec::new();
+        let mut v6_entries = Vec::new();
+
+        for e in entries {
+            if Whitelist::is_whitelisted(e) {
+                continue;
+            }
+            if e.contains(':') {
+                v6_entries.push(e.as_str());
+            } else {
+                v4_entries.push(e.as_str());
+            }
+        }
+
+        for chunk in v4_entries.chunks(100) {
+            let joined = chunk.join(", ");
+            let elements_arg = format!("{{ {} }}", joined);
+            Self::run_cmd("nft", &["add", "element", "inet", "archshield", "blacklist_v4", &elements_arg]);
+        }
+
+        for chunk in v6_entries.chunks(100) {
+            let joined = chunk.join(", ");
+            let elements_arg = format!("{{ {} }}", joined);
+            Self::run_cmd("nft", &["add", "element", "inet", "archshield", "blacklist_v6", &elements_arg]);
+        }
     }
 
     pub fn unblock_ip(ip: &str) -> bool {
