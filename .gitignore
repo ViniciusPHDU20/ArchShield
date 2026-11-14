@@ -8,3 +8,18 @@ __pycache__/
 *.log
 *.db
 data/*.joblib
+
+# Standalone Tools / Unrelated Trainers in workspace
+ammo_*.py
+aob_*.py
+filter_*.py
+ghost_*.py
+immortality_*.py
+injector.py
+mem_hunter.py
+multi_filter.py
+nearby_hunter.py
+sniper_filter.py
+sovereign_*.py
+trinity_*.py
+

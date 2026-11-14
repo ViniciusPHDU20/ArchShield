@@ -16,6 +16,12 @@ import subprocess
 import re
 from threading import Thread, Lock
 import queue
+import os
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.path.join(BASE_DIR, "data")
+os.makedirs(DATA_DIR, exist_ok=True)
+DB_PATH = os.path.join(DATA_DIR, "archshield_cache.db")
 
 app = FastAPI(title="ArchShield PRO API", docs_url=None, redoc_url=None)
 security = HTTPBearer()
@@ -23,7 +29,6 @@ security = HTTPBearer()
 stats_bridge = {}
 identity_cache = {}
 identity_lock = Lock()
-DB_PATH = "archshield_cache.db"
 
 lookup_queue = queue.Queue()
 
@@ -130,7 +135,12 @@ def get_fast_deep_identity(ip):
 # --- API ENDPOINTS ---
 @app.get("/")
 async def serve_dashboard():
-    return FileResponse("/home/viniciusphdu/WORKSPACE_CORE/ArchShield_PRO/templates/index.html")
+    template_path = os.path.join(BASE_DIR, "templates", "index.html")
+    if not os.path.exists(template_path):
+        template_path = "/opt/archshield-pro/templates/index.html"
+    if not os.path.exists(template_path):
+        raise HTTPException(status_code=404, detail="Dashboard template not found")
+    return FileResponse(template_path)
 
 @app.get("/check_setup")
 async def check_setup():

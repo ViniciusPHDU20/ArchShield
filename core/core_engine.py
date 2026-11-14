@@ -3,6 +3,7 @@ import socket
 import ipaddress
 import re
 import subprocess
+import os
 from scapy.all import sniff, IP, TCP, UDP
 from multiprocessing import Process, Queue, Manager
 from core.intelligence import IntelligenceCore
@@ -119,7 +120,8 @@ class CoreEngine:
                     
                     # --- MOTOR APP SHIELD (Atualiza a lista de IPs Vitais) ---
                     try:
-                        result = subprocess.run(["sudo", "ss", "-tunp"], capture_output=True, text=True)
+                        cmd = ["ss", "-tunp"] if os.geteuid() == 0 else ["sudo", "ss", "-tunp"]
+                        result = subprocess.run(cmd, capture_output=True, text=True)
                         new_safe_ips = set()
                         for line in result.stdout.splitlines()[1:]:
                             parts = re.split(r"\s+", line)

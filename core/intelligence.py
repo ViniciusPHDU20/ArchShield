@@ -8,6 +8,7 @@ import os
 class IntelligenceCore:
     def __init__(self):
         self.model_path = config.AI_MODEL_PATH
+        os.makedirs(os.path.dirname(self.model_path), exist_ok=True)
         self.model = self._load_model()
         self.is_fitted = False if self.model is None else True
         self.feature_history = []

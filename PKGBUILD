@@ -5,7 +5,7 @@ pkgdesc="Enterprise-grade Network Intrusion Detection and Prevention System (IDS
 arch=("x86_64")
 url="https://github.com/ViniciusPHDU20/ArchShield"
 license=("GPL3")
-depends=("python" "python-scapy" "python-scikit-learn" "python-fastapi" "python-uvicorn" "python-pyjwt" "python-pydantic-settings" "python-httpx" "python-joblib" "python-numpy" "whois" "iptables")
+depends=("python" "python-scapy" "python-scikit-learn" "python-fastapi" "python-uvicorn" "python-pyjwt" "python-pydantic-settings" "python-dotenv" "python-httpx" "python-joblib" "python-numpy" "whois" "iptables")
 source=("git+https://github.com/ViniciusPHDU20/ArchShield.git#branch=master")
 sha256sums=("SKIP")
 
