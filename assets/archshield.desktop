@@ -1,11 +1,11 @@
 [Desktop Entry]
 Name=ArchShield PRO
-GenericName=Sovereign Intrusion Trap
-Comment=Sovereign Cyber Tripwire & Network Intrusion Prevention
-Exec=/usr/local/bin/archshield-panel
-Icon=/usr/share/icons/hicolor/scalable/apps/archshield.svg
+GenericName=Sovereign Cyber Trap & IDS Panel
+Comment=Sovereign Cyber Tripwire & Ring 0 Kernel Intrusion Prevention
+Exec=/home/viniciusphdu/.local/bin/archshield-panel
+Icon=archshield
 Terminal=false
 Type=Application
-Categories=Security;System;Network;
-Keywords=security;firewall;ids;tripwire;network;
+Categories=System;Security;Network;
+Keywords=security;firewall;ids;tripwire;network;archshield;rust;panel;
 StartupNotify=true
