@@ -622,8 +622,14 @@
                 const siteBadge = c.site ? 
                     `<span class="bg-emerald-950/90 text-emerald-300 font-bold px-2 py-0.5 rounded text-[10px] border flex items-center gap-1">🔗 ${c.site}</span>` : '';
 
+                const suspiciousBadge = c.is_suspicious ?
+                    `<span class="bg-red-950 text-red-400 font-bold px-2 py-0.5 rounded text-[10px] border border-red-700 animate-pulse">⚠️ ALERTA SUSPEITO (${c.risk_score}%)</span>` : '';
+
+                const hashDisplay = c.sha256 && c.sha256 !== 'N/A' ?
+                    `<span class="text-zinc-600 text-[9px] font-mono block">SHA256: ${c.sha256.substring(0, 16)}...</span>` : '';
+
                 return `
-                <div class="outbound-row p-3 flex items-center justify-between text-xs font-mono gap-3">
+                <div class="outbound-row p-3 flex items-center justify-between text-xs font-mono gap-3 ${c.is_suspicious ? 'border-red-900/80 bg-red-950/20' : ''}">
                     <div class="flex items-center gap-3 min-w-0">
                         <div class="px-2.5 py-1 rounded-lg border text-xs font-bold flex items-center gap-1.5 ${badgeStyle} shrink-0">
                             <span>${icon}</span>
@@ -635,8 +641,10 @@
                                 <span class="text-white font-bold tracking-tight">${c.remote}</span>
                                 ${siteBadge}
                                 ${orgBadge}
+                                ${suspiciousBadge}
                             </div>
                             <span class="text-zinc-500 text-[10px] block mt-0.5">Socket local: ${c.local}</span>
+                            ${hashDisplay}
                         </div>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">

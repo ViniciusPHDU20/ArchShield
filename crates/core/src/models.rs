@@ -1,3 +1,4 @@
+// language: Rust, file: crates/core/src/models.rs, runtime: pure-rust, target: Linux
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -30,6 +31,10 @@ pub struct ConnectionInfo {
     pub state: String,
     pub site: String,
     pub org: String,
+    pub exe_path: String,
+    pub sha256: String,
+    pub is_suspicious: bool,
+    pub risk_score: u8,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

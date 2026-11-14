@@ -1,5 +1,10 @@
-use archshield_core::ConnectionInfo;
+// language: Rust, file: crates/daemon/src/conntrack.rs, runtime: tokio, target: Linux
+use archshield_core::{analyze_process, ConnectionInfo};
+use std::collections::HashMap;
 use std::process::Command;
+use std::sync::Mutex;
+
+static HASH_CACHE: Mutex<Option<HashMap<u32, (String, String, bool, u8)>>> = Mutex::new(None);
 
 pub struct ProcessTracker;
 
@@ -57,6 +62,13 @@ impl ProcessTracker {
                 let is_loopback = remote_ip == "127.0.0.1" || remote_ip == "::1" || remote_ip == "*";
 
                 if !is_loopback && !remote_ip.is_empty() {
+                    // Análise de integridade de processo e hash SHA-256
+                    let (exe_path, sha256, is_suspicious, risk_score) = if let Some(p) = pid {
+                        Self::get_or_compute_integrity(p)
+                    } else {
+                        ("Kernel / Socket Interno".to_string(), "N/A".to_string(), false, 0)
+                    };
+
                     conns.push(ConnectionInfo {
                         process,
                         pid,
@@ -67,12 +79,39 @@ impl ProcessTracker {
                         state,
                         site: String::new(),
                         org: String::new(),
+                        exe_path,
+                        sha256,
+                        is_suspicious,
+                        risk_score,
                     });
                 }
             }
         }
 
         conns
+    }
+
+    fn get_or_compute_integrity(pid: u32) -> (String, String, bool, u8) {
+        let mut guard = HASH_CACHE.lock().unwrap();
+        let cache = guard.get_or_insert_with(HashMap::new);
+
+        if let Some(cached) = cache.get(&pid) {
+            return cached.clone();
+        }
+
+        let integrity = analyze_process(pid);
+        let res = (
+            integrity.exe_path,
+            integrity.sha256,
+            integrity.is_suspicious,
+            integrity.risk_score,
+        );
+
+        if cache.len() > 1000 {
+            cache.clear();
+        }
+        cache.insert(pid, res.clone());
+        res
     }
 
     fn extract_ip(addr_str: &str) -> String {

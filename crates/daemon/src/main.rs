@@ -49,6 +49,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("🔧 Interface padrão identificada: \x1b[1;32m{}\x1b[0m", config.interface);
     info!("🔌 Socket IPC Zero-Portas: \x1b[1;32m{:?}\x1b[0m", config.socket_path);
 
+    // Inicializa o motor de firewall O(1) nftables com sets atômicos
+    FirewallManager::init_engine();
+
     // Arma as portas de decepção cibernética (Blackhole Trap)
     FirewallManager::arm_ghost_ports(&config.ghost_ports);
 

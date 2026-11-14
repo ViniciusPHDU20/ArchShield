@@ -75,13 +75,13 @@ fn render_status(status: &SystemStatus) {
         }
     }
 
-    println!("\n\x1b[1;36m📡 TELEMETRIA DE CONEXÕES ATIVAS (PROCESSO / PID / SITE / DESTINO):\x1b[0m");
+    println!("\n\x1b[1;36m📡 TELEMETRIA DE CONEXÕES ATIVAS (PROCESSO / INTEGRIDADE SHA-256 / SITE / DESTINO):\x1b[0m");
     if status.outbound_conns.is_empty() {
         println!("   \x1b[2mNenhuma conexão externa ativa no momento.\x1b[0m");
     } else {
-        println!("   {:<20} {:<8} {:<24} {:<30} {:<8}", "PROCESSO", "PID", "SITE / DOMÍNIO", "IP DESTINO", "PROTO");
-        println!("   {:-<20} {:-<8} {:-<24} {:-<30} {:-<8}", "", "", "", "", "");
-        for conn in status.outbound_conns.iter().take(15) {
+        println!("   {:<18} {:<7} {:<20} {:<24} {:<18} {:<12}", "PROCESSO", "PID", "INTEGRIDADE / HASH", "SITE / DOMÍNIO", "IP DESTINO", "STATUS");
+        println!("   {:-<18} {:-<7} {:-<20} {:-<24} {:-<18} {:-<12}", "", "", "", "", "", "");
+        for conn in status.outbound_conns.iter().take(20) {
             let pid_str = conn.pid.map(|p| p.to_string()).unwrap_or_else(|| "-".into());
             let site_display = if conn.site.is_empty() {
                 if !conn.org.is_empty() {
@@ -92,8 +92,21 @@ fn render_status(status: &SystemStatus) {
             } else {
                 format!("🔗 {}", conn.site)
             };
-            println!("   \x1b[1;37m{:<20}\x1b[0m {:<8} \x1b[1;32m{:<24}\x1b[0m {:<30} {:<8}",
-                conn.process, pid_str, site_display, conn.remote_ip, conn.proto);
+
+            let hash_trunc = if conn.sha256.len() > 14 {
+                format!("{}...", &conn.sha256[..14])
+            } else {
+                conn.sha256.clone()
+            };
+
+            let status_tag = if conn.is_suspicious {
+                format!("\x1b[1;31m⚠️ ALERTA ({})\x1b[0m", conn.risk_score)
+            } else {
+                "\x1b[1;32m✓ LIMPO\x1b[0m".to_string()
+            };
+
+            println!("   \x1b[1;37m{:<18}\x1b[0m {:<7} \x1b[2m{:<20}\x1b[0m \x1b[1;32m{:<24}\x1b[0m {:<18} {}",
+                conn.process, pid_str, hash_trunc, site_display, conn.remote_ip, status_tag);
         }
     }
     println!();
