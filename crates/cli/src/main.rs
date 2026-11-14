@@ -23,7 +23,7 @@ async fn send_command(cmd: &IpcCommand) -> Result<IpcResponse, Box<dyn std::erro
         Ok(s) => s,
         Err(e) => {
             eprintln!("\x1b[1;31m❌ Erro ao conectar ao Daemon ArchShield em {:?}\x1b[0m", socket_path);
-            eprintln!("   Verifique se o daemon está rodando: 'sudo target/release/archshield-daemon'");
+            eprintln!("   Verifique se o daemon está rodando: 'sudo archshield-daemon' ou 'sudo systemctl start archshield'");
             return Err(Box::new(e));
         }
     };
