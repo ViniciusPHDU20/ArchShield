@@ -59,6 +59,18 @@ pub struct ConnectionInfo {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DnsQueryLog {
+    pub timestamp: u64,
+    pub formatted_time: String,
+    pub domain: String,
+    pub query_type: String,
+    pub status: String,
+    pub is_blocked: bool,
+    pub client_ip: String,
+    pub resolved_ip: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SystemStatus {
     pub total_packets: u64,
     pub trapped_count: usize,
@@ -73,6 +85,9 @@ pub struct SystemStatus {
     pub kernel_integrity: KernelIntegrityReport,
     pub covert_alerts: Vec<CovertAlert>,
     pub notification_settings: NotificationSettings,
+    pub total_dns_queries: u64,
+    pub blocked_dns_queries: u64,
+    pub dns_queries: Vec<DnsQueryLog>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

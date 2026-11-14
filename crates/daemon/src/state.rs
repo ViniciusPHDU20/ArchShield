@@ -1,8 +1,8 @@
 // language: Rust, file: crates/daemon/src/state.rs, runtime: tokio, target: Linux
 use crate::notify::Notifier;
 use archshield_core::{
-    ConnectionInfo, CovertAlert, IntruderEvent, KernelIntegrityReport, NotificationSettings,
-    RootkitHunter, SystemStatus,
+    ConnectionInfo, CovertAlert, DnsQueryLog, IntruderEvent, KernelIntegrityReport,
+    NotificationSettings, RootkitHunter, SystemStatus,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -17,6 +17,10 @@ pub struct PersistentData {
     pub trapped_intruders: Vec<IntruderEvent>,
     #[serde(default)]
     pub notification_settings: NotificationSettings,
+    #[serde(default)]
+    pub total_dns_queries: u64,
+    #[serde(default)]
+    pub blocked_dns_queries: u64,
 }
 
 pub struct SystemState {
@@ -30,6 +34,9 @@ pub struct SystemState {
     pub covert_alerts: Vec<CovertAlert>,
     pub kernel_report: KernelIntegrityReport,
     pub notification_settings: NotificationSettings,
+    pub total_dns_queries: AtomicU64,
+    pub blocked_dns_queries: AtomicU64,
+    pub dns_queries: Vec<DnsQueryLog>,
 }
 
 impl SystemState {
@@ -48,12 +55,16 @@ impl SystemState {
         let mut initial_packets = 0;
         let mut initial_intruders = Vec::new();
         let mut initial_notify = NotificationSettings::default();
+        let mut initial_total_dns = 0;
+        let mut initial_blocked_dns = 0;
 
         if let Ok(content) = std::fs::read_to_string(&state_path) {
             if let Ok(data) = serde_json::from_str::<PersistentData>(&content) {
                 initial_packets = data.total_packets;
                 initial_intruders = data.trapped_intruders;
                 initial_notify = data.notification_settings;
+                initial_total_dns = data.total_dns_queries;
+                initial_blocked_dns = data.blocked_dns_queries;
                 tracing::info!(
                     "💾 [PERSISTÊNCIA] Estado recuperado de {:?}: {} pacotes acumulados, {} intrusos em histórico",
                     state_path,
@@ -76,6 +87,9 @@ impl SystemState {
             covert_alerts: Vec::new(),
             kernel_report: initial_kernel_report,
             notification_settings: initial_notify,
+            total_dns_queries: AtomicU64::new(initial_total_dns),
+            blocked_dns_queries: AtomicU64::new(initial_blocked_dns),
+            dns_queries: Vec::new(),
         }
     }
 
@@ -85,6 +99,8 @@ impl SystemState {
             total_packets: self.total_packets.load(Ordering::Relaxed),
             trapped_intruders: self.trapped_intruders.clone(),
             notification_settings: self.notification_settings.clone(),
+            total_dns_queries: self.total_dns_queries.load(Ordering::Relaxed),
+            blocked_dns_queries: self.blocked_dns_queries.load(Ordering::Relaxed),
         };
 
         if let Ok(json) = serde_json::to_string_pretty(&data) {
@@ -262,6 +278,17 @@ impl SystemState {
         }
     }
 
+    pub fn record_dns_query(&mut self, log: DnsQueryLog) {
+        self.total_dns_queries.fetch_add(1, Ordering::Relaxed);
+        if log.is_blocked {
+            self.blocked_dns_queries.fetch_add(1, Ordering::Relaxed);
+        }
+        self.dns_queries.insert(0, log);
+        if self.dns_queries.len() > 100 {
+            self.dns_queries.truncate(100);
+        }
+    }
+
     pub fn build_snapshot(
         &self,
         active_conns: Vec<ConnectionInfo>,
@@ -292,6 +319,9 @@ impl SystemState {
             kernel_integrity: self.kernel_report.clone(),
             covert_alerts: self.covert_alerts.clone(),
             notification_settings: self.notification_settings.clone(),
+            total_dns_queries: self.total_dns_queries.load(Ordering::Relaxed),
+            blocked_dns_queries: self.blocked_dns_queries.load(Ordering::Relaxed),
+            dns_queries: self.dns_queries.clone(),
         }
     }
 

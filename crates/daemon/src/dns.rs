@@ -113,6 +113,40 @@ impl DnsSniffer {
         }
     }
 
+    fn current_formatted_time() -> (u64, String) {
+        let now = std::time::SystemTime::now();
+        let epoch = now
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        let hours = (epoch / 3600) % 24;
+        let mins = (epoch / 60) % 60;
+        let secs = epoch % 60;
+        (epoch, format!("{:02}:{:02}:{:02}", hours, mins, secs))
+    }
+
+    fn is_ad_or_tracker_domain(domain: &str) -> bool {
+        let d = domain.to_lowercase();
+        d.contains("doubleclick")
+            || d.contains("googleads")
+            || d.contains("adservice")
+            || d.contains("adserver")
+            || d.contains("adnxs")
+            || d.contains("criteo")
+            || d.contains("outbrain")
+            || d.contains("taboola")
+            || d.contains("telemetry.mozilla")
+            || d.contains("ads.twitter")
+            || d.contains("analytics")
+            || d.contains("scorecardresearch")
+            || d.contains("clarity.ms")
+            || d.contains("hotjar")
+            || d.contains("tracking")
+            || d.contains("popads")
+            || d.contains("adcolony")
+            || d.contains("unityads")
+    }
+
     fn parse_dns_payload(payload: &[u8], state: &SharedState) {
         if payload.len() < 12 {
             return;
@@ -120,24 +154,26 @@ impl DnsSniffer {
 
         let flags = u16::from_be_bytes([payload[2], payload[3]]);
         let is_response = (flags & 0x8000) != 0;
-        if !is_response {
-            return;
-        }
+        let rcode = flags & 0x000F;
 
         let qdcount = u16::from_be_bytes([payload[4], payload[5]]) as usize;
         let ancount = u16::from_be_bytes([payload[6], payload[7]]) as usize;
 
-        if qdcount == 0 || ancount == 0 {
+        if qdcount == 0 {
             return;
         }
 
         let mut offset = 12;
-
         let mut first_qname = String::new();
+        let mut first_qtype = 1u16;
+
         for i in 0..qdcount {
             if let Some((name, next_off)) = Self::parse_dns_name(payload, offset) {
                 if i == 0 {
                     first_qname = name;
+                    if next_off + 2 <= payload.len() {
+                        first_qtype = u16::from_be_bytes([payload[next_off], payload[next_off + 1]]);
+                    }
                 }
                 offset = next_off + 4;
                 if offset > payload.len() {
@@ -164,52 +200,102 @@ impl DnsSniffer {
             });
         }
 
-        for _ in 0..ancount {
-            if offset >= payload.len() {
-                break;
-            }
+        // Se for resposta DNS, extrai registros e audita bloqueio de anúncios
+        if is_response {
+            let mut resolved_ip = None;
+            let mut is_blocked = rcode == 3 || Self::is_ad_or_tracker_domain(&first_qname);
 
-            if let Some((_, next_off)) = Self::parse_dns_name(payload, offset) {
-                offset = next_off;
-                if offset + 10 > payload.len() {
+            for _ in 0..ancount {
+                if offset >= payload.len() {
                     break;
                 }
 
-                let rtype = u16::from_be_bytes([payload[offset], payload[offset + 1]]);
-                let rdlen = u16::from_be_bytes([payload[offset + 8], payload[offset + 9]]) as usize;
-                offset += 10;
+                if let Some((_, next_off)) = Self::parse_dns_name(payload, offset) {
+                    offset = next_off;
+                    if offset + 10 > payload.len() {
+                        break;
+                    }
 
-                if offset + rdlen > payload.len() {
+                    let rtype = u16::from_be_bytes([payload[offset], payload[offset + 1]]);
+                    let rdlen = u16::from_be_bytes([payload[offset + 8], payload[offset + 9]]) as usize;
+                    offset += 10;
+
+                    if offset + rdlen > payload.len() {
+                        break;
+                    }
+
+                    let rdata = &payload[offset..offset + rdlen];
+                    offset += rdlen;
+
+                    if rtype == 1 && rdlen == 4 {
+                        let ip = Ipv4Addr::new(rdata[0], rdata[1], rdata[2], rdata[3]).to_string();
+                        if ip == "0.0.0.0" {
+                            is_blocked = true;
+                        }
+                        let domain = first_qname.clone();
+                        tokio::spawn({
+                            let state = Arc::clone(state);
+                            let ip_c = ip.clone();
+                            async move {
+                                state.write().await.associate_ip_domain(ip_c, domain);
+                            }
+                        });
+                        if resolved_ip.is_none() {
+                            resolved_ip = Some(ip);
+                        }
+                    } else if rtype == 28 && rdlen == 16 {
+                        let mut octets = [0u8; 16];
+                        octets.copy_from_slice(rdata);
+                        let ip = Ipv6Addr::from(octets).to_string();
+                        if ip == "::" {
+                            is_blocked = true;
+                        }
+                        let domain = first_qname.clone();
+                        tokio::spawn({
+                            let state = Arc::clone(state);
+                            let ip_c = ip.clone();
+                            async move {
+                                state.write().await.associate_ip_domain(ip_c, domain);
+                            }
+                        });
+                        if resolved_ip.is_none() {
+                            resolved_ip = Some(ip);
+                        }
+                    }
+                } else {
                     break;
                 }
-
-                let rdata = &payload[offset..offset + rdlen];
-                offset += rdlen;
-
-                if rtype == 1 && rdlen == 4 {
-                    let ip = Ipv4Addr::new(rdata[0], rdata[1], rdata[2], rdata[3]).to_string();
-                    let domain = first_qname.clone();
-                    tokio::spawn({
-                        let state = Arc::clone(state);
-                        async move {
-                            state.write().await.associate_ip_domain(ip, domain);
-                        }
-                    });
-                } else if rtype == 28 && rdlen == 16 {
-                    let mut octets = [0u8; 16];
-                    octets.copy_from_slice(rdata);
-                    let ip = Ipv6Addr::from(octets).to_string();
-                    let domain = first_qname.clone();
-                    tokio::spawn({
-                        let state = Arc::clone(state);
-                        async move {
-                            state.write().await.associate_ip_domain(ip, domain);
-                        }
-                    });
-                }
-            } else {
-                break;
             }
+
+            let (ts, formatted_time) = Self::current_formatted_time();
+            let query_type_str = match first_qtype {
+                28 => "AAAA",
+                65 => "HTTPS",
+                5 => "CNAME",
+                _ => "A",
+            };
+
+            let log_entry = archshield_core::DnsQueryLog {
+                timestamp: ts,
+                formatted_time,
+                domain: first_qname,
+                query_type: query_type_str.to_string(),
+                status: if is_blocked { "BLOCKED_ADGUARD".to_string() } else { "RESOLVED".to_string() },
+                is_blocked,
+                client_ip: "127.0.0.1".to_string(),
+                resolved_ip: if is_blocked {
+                    "0.0.0.0 (AdGuard Sinkhole)".to_string()
+                } else {
+                    resolved_ip.unwrap_or_else(|| "✓ Resolvido".to_string())
+                },
+            };
+
+            tokio::spawn({
+                let state = Arc::clone(state);
+                async move {
+                    state.write().await.record_dns_query(log_entry);
+                }
+            });
         }
     }
 

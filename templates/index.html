@@ -356,6 +356,31 @@
             opacity: 0.35;
             cursor: not-allowed;
         }
+
+        /* NAVEGAÇÃO DE ABAS SOBERANAS */
+        .main-tab-btn {
+            background: #121217;
+            border: 1px solid #27272a;
+            color: #a1a1aa;
+            font-family: monospace;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+        }
+        .main-tab-btn:hover {
+            color: #ffffff;
+            border-color: #3f3f46;
+        }
+        .main-tab-btn.active {
+            background: #7c3aed;
+            border-color: #a78bfa;
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
+        }
     </style>
 </head>
 <body>
@@ -475,6 +500,19 @@
                 <button onclick="clearTrap()" class="bg-zinc-900 border text-zinc-400 hover:text-white px-3 py-1.5 rounded text-xs font-mono font-bold transition uppercase">Limpar Registro</button>
             </div>
         </header>
+
+        <!-- SELETOR DE ABAS SOBERANAS (DEFESA VS PI-HOLE ADGUARD) -->
+        <div class="flex items-center gap-3 mb-6 border-b pb-4">
+            <button id="tab-btn-defense" onclick="switchMainTab('defense')" class="main-tab-btn active flex items-center gap-2">
+                <span>🛡️</span> Perímetro &amp; Ring 0
+            </button>
+            <button id="tab-btn-dns" onclick="switchMainTab('dns')" class="main-tab-btn flex items-center gap-2">
+                <span>🛑</span> DNS Shield &amp; AdBlock <span class="bg-purple-950 border border-purple-700 text-purple-300 text-[10px] px-2 py-0.5 rounded font-mono uppercase">Pi-hole Mode</span>
+            </button>
+        </div>
+
+        <!-- ABA 1: PERÍMETRO & RING 0 (DEFESA ATIVA) -->
+        <div id="tab-content-defense">
 
         <!-- CARDS DE MÉTRICAS -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -597,6 +635,76 @@
             </div>
 
         </div>
+        </div> <!-- FIM TAB 1: DEFESA -->
+
+        <!-- ABA 2: DNS SHIELD & ADGUARD SINKHOLE (ESTILO PI-HOLE) -->
+        <div id="tab-content-dns" style="display: none;">
+            <!-- CARDS DE MÉTRICAS PI-HOLE -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div class="card-vault p-5 border-l-4 border-l-purple-500">
+                    <p class="text-purple-400 text-[10px] font-mono font-bold tracking-widest uppercase mb-1">Consultas DNS Totais</p>
+                    <h2 id="dns-stats-total" class="text-3xl font-black text-white font-mono">0</h2>
+                    <span class="text-zinc-600 text-[10px] font-mono">Auditadas em lo (127.0.0.53:53)</span>
+                </div>
+                <div class="card-vault p-5 border-l-4 border-l-red-500">
+                    <p class="text-red-400 text-[10px] font-mono font-bold tracking-widest uppercase mb-1">Anúncios &amp; Trackers Bloqueados</p>
+                    <h2 id="dns-stats-blocked" class="text-3xl font-black text-red-500 font-mono">0</h2>
+                    <span class="text-zinc-600 text-[10px] font-mono">Neutralizados via DoT Sinkhole</span>
+                </div>
+                <div class="card-vault p-5 border-l-4 border-l-emerald-500">
+                    <p class="text-emerald-400 text-[10px] font-mono font-bold tracking-widest uppercase mb-1">Taxa de Bloqueio</p>
+                    <h2 id="dns-stats-rate" class="text-3xl font-black text-emerald-400 font-mono">0.0%</h2>
+                    <span class="text-zinc-600 text-[10px] font-mono">Economia de banda &amp; telemetria</span>
+                </div>
+                <div class="card-vault p-5 border-l-4 border-l-purple-400">
+                    <p class="text-zinc-400 text-[10px] font-mono font-bold tracking-widest uppercase mb-1">Provedor Criptografado</p>
+                    <h2 class="text-2xl font-black text-purple-300 font-mono">AdGuard DoT</h2>
+                    <span class="text-emerald-400 text-[10px] font-mono flex items-center gap-1">
+                        <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400"></span> TLS 1.3 // 94.140.14.14:853
+                    </span>
+                </div>
+            </div>
+
+            <!-- TABELA LIVE QUERY LOG (PI-HOLE STREAM) -->
+            <div class="card-vault p-5 mb-8">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3 border-b border-zinc-800 pb-4">
+                    <div>
+                        <h2 class="text-base font-black text-purple-300 font-mono tracking-wider uppercase flex items-center gap-2">
+                            <span>📡</span> Fluxo de Consultas DNS em Tempo Real (Live Query Log)
+                        </h2>
+                        <p class="text-zinc-500 text-xs font-mono">Auditando requisições do sistema via Socket Loopback em Ring 0</p>
+                    </div>
+                    <div class="flex items-center gap-2 w-full md:w-auto">
+                        <input type="text" id="dns-search-input" oninput="applyDnsFilter()" placeholder="Buscar domínio (ex: google, doubleclick, steam)..." class="text-xs font-mono py-1.5 px-3 rounded bg-zinc-950 border border-zinc-700 text-white w-full md:w-72">
+                        <div class="flex gap-1 shrink-0">
+                            <button type="button" class="filter-pill active" id="pill-dns-all" onclick="setDnsFilter('')">Todos</button>
+                            <button type="button" class="filter-pill" id="pill-dns-blocked" onclick="setDnsFilter('blocked')">🛑 Bloqueados</button>
+                            <button type="button" class="filter-pill" id="pill-dns-resolved" onclick="setDnsFilter('resolved')">✓ Liberados</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto" style="max-height: 480px; overflow-y: auto;">
+                    <table class="w-full text-left font-mono text-xs">
+                        <thead class="bg-zinc-950/80 sticky top-0 border-b border-zinc-800 text-zinc-400 text-[10px] uppercase">
+                            <tr>
+                                <th class="py-2.5 px-3">Horário</th>
+                                <th class="py-2.5 px-3">Domínio Consultado</th>
+                                <th class="py-2.5 px-3">Tipo</th>
+                                <th class="py-2.5 px-3">Resposta / IP</th>
+                                <th class="py-2.5 px-3">Status</th>
+                                <th class="py-2.5 px-3 text-right">Ação Rápida</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dns-query-table-body" class="divide-y divide-zinc-900 text-zinc-300">
+                            <tr>
+                                <td colspan="6" class="py-8 text-center text-zinc-600 italic">Aguardando primeiras requisições DNS...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
 
     </div>
 
@@ -649,11 +757,98 @@
                 updateNotificationUI(data.notification_settings);
             }
 
+            if (data.total_dns_queries !== undefined) {
+                const totalDns = Number(data.total_dns_queries);
+                const blockedDns = Number(data.blocked_dns_queries);
+                document.getElementById('dns-stats-total').innerText = totalDns.toLocaleString();
+                document.getElementById('dns-stats-blocked').innerText = blockedDns.toLocaleString();
+                const rate = totalDns > 0 ? ((blockedDns / totalDns) * 100).toFixed(1) : '0.0';
+                document.getElementById('dns-stats-rate').innerText = rate + '%';
+            }
+            if (data.dns_queries) {
+                cachedDnsQueries = data.dns_queries;
+                applyDnsFilter();
+            }
+
             applyTrapFilter();
             applyOutboundFilter();
             renderBlockedIPs(data.blocked_ips || []);
             updateChart(data.time_history || data.times, data.traffic_history || data.packets);
         };
+
+        let currentMainTab = 'defense';
+        let cachedDnsQueries = [];
+        let currentDnsFilterType = '';
+
+        function switchMainTab(tab) {
+            currentMainTab = tab;
+            const btnDefense = document.getElementById('tab-btn-defense');
+            const btnDns = document.getElementById('tab-btn-dns');
+            const contentDefense = document.getElementById('tab-content-defense');
+            const contentDns = document.getElementById('tab-content-dns');
+
+            if (tab === 'defense') {
+                btnDefense.classList.add('active');
+                btnDns.classList.remove('active');
+                contentDefense.style.display = 'block';
+                contentDns.style.display = 'none';
+            } else {
+                btnDefense.classList.remove('active');
+                btnDns.classList.add('active');
+                contentDefense.style.display = 'none';
+                contentDns.style.display = 'block';
+            }
+        }
+
+        function setDnsFilter(type) {
+            currentDnsFilterType = type;
+            document.querySelectorAll('#tab-content-dns .filter-pill').forEach(b => b.classList.remove('active'));
+            if (!type) document.getElementById('pill-dns-all')?.classList.add('active');
+            else if (type === 'blocked') document.getElementById('pill-dns-blocked')?.classList.add('active');
+            else if (type === 'resolved') document.getElementById('pill-dns-resolved')?.classList.add('active');
+            applyDnsFilter();
+        }
+
+        function applyDnsFilter() {
+            const query = (document.getElementById('dns-search-input')?.value || '').toLowerCase().trim();
+            const filtered = cachedDnsQueries.filter(q => {
+                const matchesText = !query || q.domain.toLowerCase().includes(query) || q.resolved_ip.toLowerCase().includes(query);
+                const matchesType = !currentDnsFilterType ||
+                    (currentDnsFilterType === 'blocked' && q.is_blocked) ||
+                    (currentDnsFilterType === 'resolved' && !q.is_blocked);
+                return matchesText && matchesType;
+            });
+            renderDnsTable(filtered);
+        }
+
+        function renderDnsTable(queries) {
+            const tbody = document.getElementById('dns-query-table-body');
+            if (!tbody) return;
+            if (!queries || queries.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-zinc-600 italic font-mono">Nenhuma consulta correspondente aos filtros ativos.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = queries.map(q => {
+                const statusBadge = q.is_blocked
+                    ? '<span class="bg-red-950/90 text-red-400 border border-red-800 text-[10px] font-bold px-2 py-0.5 rounded">🛑 ANÚNCIO BLOQUEADO</span>'
+                    : '<span class="bg-emerald-950/90 text-emerald-400 border border-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded">✓ RESOLVIDO (DoT)</span>';
+
+                return `
+                <tr class="hover:bg-zinc-900/40 transition">
+                    <td class="py-2.5 px-3 text-zinc-500 font-mono text-[11px]">${q.formatted_time}</td>
+                    <td class="py-2.5 px-3 font-bold text-white flex items-center gap-1.5">
+                        <span class="text-purple-400">🔗</span> ${q.domain}
+                    </td>
+                    <td class="py-2.5 px-3 text-zinc-400 font-mono text-[11px]">${q.query_type}</td>
+                    <td class="py-2.5 px-3 text-zinc-300 font-mono text-[11px]">${q.resolved_ip}</td>
+                    <td class="py-2.5 px-3">${statusBadge}</td>
+                    <td class="py-2.5 px-3 text-right">
+                        ${q.is_blocked ? '<span class="text-[10px] text-zinc-500 font-mono">Sinkhole</span>' : `<button onclick="blockIP('${q.resolved_ip}')" title="Banir IP no Netfilter" class="bg-red-950/60 text-red-400 hover:text-white px-2 py-0.5 rounded border border-red-800 text-[10px] font-bold font-mono">Banir IP</button>`}
+                    </td>
+                </tr>`;
+            }).join('');
+        }
 
         let currentNotificationSettings = {
             enabled: true,

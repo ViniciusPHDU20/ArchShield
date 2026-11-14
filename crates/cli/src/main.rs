@@ -63,6 +63,13 @@ fn render_status(status: &SystemStatus) {
         status.total_packets, status.trapped_count, status.blocked_count);
     println!(" 🌐 \x1b[1;36mConexões Ativas Outbound:\x1b[0m {}  |  🔬 \x1b[1;35mIntegridade Ring 0:\x1b[0m {}", 
         status.outbound_count, if status.kernel_integrity.is_clean { "\x1b[1;32m✓ LIMPO\x1b[0m" } else { "\x1b[1;31m⚠️ COMPROMISSO\x1b[0m" });
+    let dns_rate = if status.total_dns_queries > 0 {
+        (status.blocked_dns_queries as f64 / status.total_dns_queries as f64) * 100.0
+    } else {
+        0.0
+    };
+    println!(" 🛑 \x1b[1;36mDNS Auditados (DoT):\x1b[0m {}  |  🚫 \x1b[1;31mAds Bloqueados (Pi-hole):\x1b[0m {} ({:.1}%)", 
+        status.total_dns_queries, status.blocked_dns_queries, dns_rate);
     println!("\x1b[1;32m══════════════════════════════════════════════════════════════════════════════\x1b[0m\n");
 
     // ALERTA DE KERNEL ROOTKIT SE HOUVER
@@ -254,8 +261,39 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 eprintln!("Uso: archshield-ctl notify [status|on|off]");
             }
         }
+        "dns" => {
+            match send_command(&IpcCommand::GetStatus).await? {
+                IpcResponse::Status(s) => {
+                    println!("\x1b[1;36m🛑 ARCHSHIELD DNS SHIELD & SINKHOLE (ESTILO PI-HOLE):\x1b[0m");
+                    println!("   Total de Consultas Auditadas: \x1b[1;37m{}\x1b[0m", s.total_dns_queries);
+                    println!("   Anúncios e Rastreadores Bloqueados: \x1b[1;31m{}\x1b[0m", s.blocked_dns_queries);
+                    let rate = if s.total_dns_queries > 0 {
+                        (s.blocked_dns_queries as f64 / s.total_dns_queries as f64) * 100.0
+                    } else {
+                        0.0
+                    };
+                    println!("   Taxa de Economia / Bloqueio: \x1b[1;32m{:.1}%\x1b[0m", rate);
+                    println!("   Provedor Criptografado: \x1b[1;32mAdGuard DoT (94.140.14.14:853)\x1b[0m\n");
+
+                    println!("\x1b[1;33m📡 ÚLTIMAS CONSULTAS DNS (LIVE STREAM):\x1b[0m");
+                    if s.dns_queries.is_empty() {
+                        println!("   \x1b[2mNenhuma consulta registrada ainda.\x1b[0m");
+                    } else {
+                        for q in s.dns_queries.iter().take(15) {
+                            let status_tag = if q.is_blocked {
+                                "\x1b[1;31m[🛑 ANÚNCIO BLOQUEADO]\x1b[0m"
+                            } else {
+                                "\x1b[1;32m[✓ RESOLVIDO]\x1b[0m"
+                            };
+                            println!("   [{}] {:<6} {:<38} -> {:<22} {}", q.formatted_time, q.query_type, q.domain, q.resolved_ip, status_tag);
+                        }
+                    }
+                }
+                other => println!("{:?}", other),
+            }
+        }
         _ => {
-            eprintln!("Uso: archshield-ctl [status|watch|audit|json|block <ip>|unblock <ip>|clear|notify [status|on|off]|ping]");
+            eprintln!("Uso: archshield-ctl [status|watch|audit|json|block <ip>|unblock <ip>|clear|notify [status|on|off]|dns|ping]");
         }
     }
 
