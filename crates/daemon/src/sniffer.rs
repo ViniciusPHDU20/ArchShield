@@ -182,8 +182,8 @@ impl PacketSniffer {
             }
             IpNextHeaderProtocols::Icmp | IpNextHeaderProtocols::Icmpv6 => {
                 if let Some(covert) = archshield_core::analyze_icmp_payload(payload, src, dst) {
-                    let alert_msg = format!("Canal Oculto ICMP detectado de {} para {}: {}", src, dst, covert.summary);
-                    Notifier::send_alert("⚠️ ArchShield PRO: Alerta Encoberto", &alert_msg, "critical");
+                    let alert_msg = format!("Canal Oculto ICMP de {} para {}: {}", src, dst, covert.summary);
+                    Notifier::alert_covert(&alert_msg);
                     tokio::spawn({
                         let state = Arc::clone(state);
                         async move {
@@ -293,17 +293,15 @@ impl PacketSniffer {
             // Auto-bloqueio se for scanner agressivo identificado (Nmap, Masscan, ZMap)
             if fp.is_scanner && !is_blocked {
                 FirewallManager::block_ip(src, config.dry_run);
-            }
 
-            // Notificação visual desktop nativa
-            let alert_body = format!(
-                "Intruso interceptado na porta {} ({})\nIP: {} | Scanner: {}",
-                dst_port,
-                describe_port(dst_port),
-                src,
-                if fp.scanner_name.is_empty() { "Probe Genérico" } else { &fp.scanner_name }
-            );
-            Notifier::send_alert("🚨 ArchShield PRO: Intrusão Neutralizada", &alert_body, "critical");
+                // Notificação filtrada: dispara popup APENAS para novos atacantes ativos isolados
+                let reason = if fp.scanner_name.is_empty() {
+                    "Varredura hostil ativa".to_string()
+                } else {
+                    format!("Scanner automatizado ({})", fp.scanner_name)
+                };
+                Notifier::alert_blocked_attacker(src, &reason);
+            }
 
             tokio::spawn({
                 let state = Arc::clone(state);

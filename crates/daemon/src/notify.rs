@@ -1,12 +1,68 @@
 // language: Rust, file: crates/daemon/src/notify.rs, runtime: tokio, target: Linux
 use std::process::Command;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::SystemTime;
 use tracing::info;
+
+static LAST_INTRUSION_ALERT: AtomicU64 = AtomicU64::new(0);
+static LAST_COVERT_ALERT: AtomicU64 = AtomicU64::new(0);
+static LAST_ROOTKIT_ALERT: AtomicU64 = AtomicU64::new(0);
+
+// Cooldown de 5 minutos (300s) para evitar poluição da tela e fadiga de alertas
+const ALERT_COOLDOWN_SECS: u64 = 300;
 
 pub struct Notifier;
 
 impl Notifier {
-    /// Envia uma notificação visual nativa para todos os usuários com sessão gráfica ativa
-    pub fn send_alert(title: &str, body: &str, urgency: &str) {
+    fn current_timestamp() -> u64 {
+        SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs()
+    }
+
+    /// Alerta de Rootkit em Ring 0 (Severidade Máxima: LKMs ocultos ou processos DKOM)
+    pub fn alert_rootkit(details: &str) {
+        let now = Self::current_timestamp();
+        let last = LAST_ROOTKIT_ALERT.load(Ordering::Relaxed);
+        if now.saturating_sub(last) < ALERT_COOLDOWN_SECS {
+            return;
+        }
+        LAST_ROOTKIT_ALERT.store(now, Ordering::Relaxed);
+
+        let title = "💀 ArchShield PRO: Alerta Crítico de Kernel";
+        Self::send_alert(title, details, "critical");
+    }
+
+    /// Alerta de Exfiltração de Dados / DNS Tunneling ou Canal Encoberto
+    pub fn alert_covert(details: &str) {
+        let now = Self::current_timestamp();
+        let last = LAST_COVERT_ALERT.load(Ordering::Relaxed);
+        if now.saturating_sub(last) < ALERT_COOLDOWN_SECS {
+            return;
+        }
+        LAST_COVERT_ALERT.store(now, Ordering::Relaxed);
+
+        let title = "⚠️ ArchShield PRO: Exfiltração de Dados";
+        Self::send_alert(title, details, "critical");
+    }
+
+    /// Alerta de Bloqueio Ativo (Apenas quando um atacante agressivo é ativamente isolado no Netfilter)
+    pub fn alert_blocked_attacker(ip: &str, reason: &str) {
+        let now = Self::current_timestamp();
+        let last = LAST_INTRUSION_ALERT.load(Ordering::Relaxed);
+        if now.saturating_sub(last) < ALERT_COOLDOWN_SECS {
+            return;
+        }
+        LAST_INTRUSION_ALERT.store(now, Ordering::Relaxed);
+
+        let title = "🛡️ ArchShield PRO: Atacante Isolado no Kernel";
+        let body = format!("IP Hostil bloqueado: {}\nMotivo: {}", ip, reason);
+        Self::send_alert(title, &body, "normal");
+    }
+
+    /// Despacho assíncrono para as sessões gráficas ativas
+    fn send_alert(title: &str, body: &str, urgency: &str) {
         let title = title.to_string();
         let body = body.to_string();
         let urgency = urgency.to_string();

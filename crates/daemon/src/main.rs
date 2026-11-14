@@ -112,7 +112,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     report.hidden_lkm_modules.len(),
                     report.hidden_pids.len()
                 );
-                Notifier::send_alert("💀 ArchShield PRO: Alerta de Rootkit", &msg, "critical");
+                Notifier::alert_rootkit(&msg);
             }
             audit_state.write().await.update_kernel_report(report);
         }

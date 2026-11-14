@@ -155,7 +155,7 @@ impl DnsSniffer {
         // Inspeção de Contrainteligência: Detecção de DNS Tunneling e Exfiltração Furtiva
         if let Some(covert) = archshield_core::analyze_dns_query(&first_qname) {
             let msg = format!("Subdomínio de alta entropia detectado: {}\n{}", first_qname, covert.summary);
-            crate::notify::Notifier::send_alert("⚠️ ArchShield PRO: DNS Tunneling", &msg, "critical");
+            crate::notify::Notifier::alert_covert(&msg);
             tokio::spawn({
                 let state = Arc::clone(state);
                 async move {
