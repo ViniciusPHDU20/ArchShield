@@ -3,37 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ArchShield PRO - Sovereign Tripwire Command</title>
+    <title>ArchShield PRO - Sovereign Tripwire & Intelligence Command</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
             --primary: #8b5cf6;
-            --primary-glow: rgba(139, 92, 246, 0.4);
+            --primary-glow: rgba(139, 92, 246, 0.35);
             --danger: #ef4444;
-            --danger-glow: rgba(239, 68, 68, 0.4);
+            --danger-glow: rgba(239, 68, 68, 0.35);
             --success: #10b981;
-            --warning: #f59e0b;
             --bg: #09090b;
             --card: #121217;
             --border: #27272a;
         }
         body { background-color: var(--bg); color: #f4f4f5; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; overflow-x: hidden; }
-        .neon-border { border: 1px solid var(--primary); box-shadow: 0 0 15px var(--primary-glow); }
-        .neon-danger { border: 1px solid var(--danger); box-shadow: 0 0 15px var(--danger-glow); }
         .neon-text { color: #a78bfa; text-shadow: 0 0 10px rgba(167, 139, 250, 0.5); }
-        .card-vault { background: var(--card); border: 1px solid var(--border); transition: all 0.25s ease; }
+        .card-vault { background: var(--card); border: 1px solid var(--border); transition: all 0.2s ease; }
         .card-vault:hover { border-color: #3f3f46; }
-        .trap-card { background: #16111e; border: 1px solid #4c1d95; transition: all 0.2s; }
-        .trap-card:hover { border-color: #8b5cf6; transform: translateY(-2px); box-shadow: 0 4px 20px rgba(139, 92, 246, 0.15); }
-        .pulse-red { animation: pulseRed 2s infinite; }
-        @keyframes pulseRed {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-        }
+        .trap-card { background: #151022; border: 1px solid #4c1d95; transition: all 0.2s ease; }
+        .trap-card:hover { border-color: #8b5cf6; transform: translateY(-2px); box-shadow: 0 4px 20px rgba(139, 92, 246, 0.2); }
+        .outbound-row { background: #0e0e13; border: 1px solid #1f1f28; transition: all 0.15s ease; }
+        .outbound-row:hover { background: #161622; border-color: #3b3b4f; }
+        .filter-pill { transition: all 0.15s ease; }
+        .filter-pill.active { background: #8b5cf6; color: white; border-color: #8b5cf6; font-weight: bold; }
         #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-        .auth-box { background: #121217; padding: 40px; border: 1px solid #7c3aed; text-align: center; border-radius: 8px; box-shadow: 0 0 25px rgba(124, 58, 237, 0.3); }
+        .auth-box { background: #121217; padding: 40px; border: 1px solid #7c3aed; text-align: center; border-radius: 10px; box-shadow: 0 0 30px rgba(124, 58, 237, 0.35); }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #09090b; }
         ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
@@ -62,21 +57,21 @@
     <!-- PAINEL PRINCIPAL -->
     <div class="max-w-7xl mx-auto" id="dashboard-content" style="display:none;">
         
-        <!-- CABEÇALHO -->
+        <!-- CABEÇALHO SOBERANO -->
         <header class="flex flex-col md:flex-row justify-between items-center mb-8 pb-6 border-b border-zinc-800 gap-4">
             <div>
                 <div class="flex items-center gap-3">
                     <h1 class="text-3xl md:text-4xl font-black neon-text tracking-tighter uppercase">ArchShield <span class="text-zinc-300 text-sm font-light">PRO v2.1</span></h1>
                     <span class="bg-purple-950/80 border border-purple-500/50 text-purple-300 text-[10px] font-mono px-2 py-0.5 rounded tracking-widest uppercase">Tripwire Edition</span>
                 </div>
-                <p class="text-zinc-500 text-xs mt-1 font-mono">Perímetro Soberano // Armadilha Silenciosa & Telemetria Conntrack</p>
+                <p class="text-zinc-500 text-xs mt-1 font-mono">Perímetro Soberano // Armadilha Silenciosa & Matriz de Processos</p>
             </div>
             <div class="flex flex-wrap items-center gap-3">
                 <div id="ai-badge" class="bg-zinc-900 border border-yellow-700/60 text-yellow-500 px-3 py-1.5 rounded text-xs font-mono font-bold uppercase flex items-center gap-2">
                     <span class="inline-block w-2 h-2 rounded-full bg-yellow-500"></span> IA: Aprendendo
                 </div>
                 <div class="bg-zinc-900 border border-purple-800/60 text-purple-400 px-3 py-1.5 rounded text-xs font-mono font-bold uppercase flex items-center gap-2">
-                    <span class="inline-block w-2 h-2 rounded-full bg-purple-500"></span> Armadilha Ativa
+                    <span class="inline-block w-2 h-2 rounded-full bg-purple-500"></span> Armadilha Armada
                 </div>
                 <button onclick="logout()" class="bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white px-3 py-1.5 rounded text-xs font-mono font-bold hover:bg-zinc-800 transition uppercase">Sair</button>
             </div>
@@ -119,60 +114,97 @@
         </div>
 
         <!-- SEÇÃO 1: A ARMADILHA SILENCIOSA (INVASORES DESMASCARADOS) -->
-        <section class="mb-10">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+        <section class="mb-10 card-vault p-5 rounded-xl border border-purple-950/70">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
                 <div>
                     <h2 class="text-base font-black text-purple-400 font-mono tracking-wider uppercase flex items-center gap-2">
                         <span>🕸️</span> Armadilha Silenciosa // Invasores Desmascarados
                     </h2>
                     <p class="text-zinc-500 text-xs font-mono mt-0.5">Sondas de entrada que tocaram na máquina e tiveram suas identidades e sistemas revelados.</p>
                 </div>
-                <button onclick="clearTrap()" class="text-zinc-500 hover:text-zinc-300 text-xs font-mono border border-zinc-800 hover:border-zinc-700 px-3 py-1 rounded transition">Limpar Registro</button>
+                <div class="flex items-center gap-2">
+                    <span id="trap-count-badge" class="text-[11px] font-mono text-zinc-500">0 detectados</span>
+                    <button onclick="clearTrap()" class="text-zinc-400 hover:text-white text-xs font-mono border border-zinc-800 hover:border-zinc-700 px-3 py-1.5 rounded transition">Limpar Registro</button>
+                </div>
             </div>
 
-            <div id="trap-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[550px] overflow-y-auto p-1">
-                <p class="text-zinc-600 text-xs font-mono italic col-span-full py-8 text-center">Nenhum invasor detectado na armadilha no momento. O perímetro está seguro.</p>
+            <!-- LUPA DE BUSCA DA ARMADILHA -->
+            <div class="relative mb-4">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-zinc-500 text-sm">🔍</span>
+                <input type="text" id="trap-search" placeholder="Filtrar invasor por IP, país, porta ou scanner (ex: Nmap, 445, Masscan)..." 
+                       class="w-full bg-zinc-950 border border-zinc-800/90 pl-10 pr-4 py-2.5 text-xs font-mono text-white rounded-lg focus:border-purple-500 outline-none transition placeholder-zinc-600"
+                       oninput="applyTrapFilter()">
+            </div>
+
+            <!-- CONTAINER DE CARDS DE INVASORES -->
+            <div id="trap-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[500px] overflow-y-auto pr-1">
+                <p class="text-zinc-600 text-xs font-mono italic col-span-full py-8 text-center">Nenhum invasor detectado na armadilha no momento. O perímetro está silencioso e protegido.</p>
             </div>
         </section>
 
-        <!-- SEÇÃO 2: OUTBOUND MATRIX & PURGATÓRIO -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+        <!-- SEÇÃO 2: OUTBOUND MATRIX (TELEMETRIA DE PROCESSOS) & PURGATÓRIO -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
             
-            <!-- TELEMETRIA DE PROCESSOS (QUEM ESTÁ CONECTADO) -->
-            <div>
-                <div class="flex justify-between items-center mb-4">
+            <!-- OUTBOUND MATRIX (2 COLUNAS DE LARGURA) -->
+            <div class="lg:col-span-2 card-vault p-5 rounded-xl border border-emerald-950/60">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
                     <div>
-                        <h2 class="text-sm font-black text-emerald-400 font-mono tracking-wider uppercase flex items-center gap-2">
+                        <h2 class="text-base font-black text-emerald-400 font-mono tracking-wider uppercase flex items-center gap-2">
                             <span>🛰️</span> Outbound Matrix // Processos do Host
                         </h2>
-                        <p class="text-zinc-500 text-[11px] font-mono">Conexões ativas abertas por aplicativos na sua máquina.</p>
+                        <p class="text-zinc-500 text-xs font-mono">Conexões ativas abertas pelos seus aplicativos para servidores remotos.</p>
                     </div>
+                    <span id="outbound-counter" class="text-xs font-mono text-zinc-500">0 conexões ativas</span>
                 </div>
-                <div id="process-list" class="space-y-2 max-h-[420px] overflow-y-auto pr-1">
-                    <p class="text-zinc-600 text-xs font-mono italic">Aguardando telemetria de processos...</p>
+
+                <!-- LUPA DE BUSCA DE PROCESSOS -->
+                <div class="relative mb-3">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-zinc-500 text-sm">🔍</span>
+                    <input type="text" id="outbound-search" placeholder="Filtrar por processo (ex: chromium, steam), PID ou IP/Empresa (ex: cdn77, google)..." 
+                           class="w-full bg-zinc-950 border border-zinc-800/90 pl-10 pr-4 py-2.5 text-xs font-mono text-white rounded-lg focus:border-emerald-500 outline-none transition placeholder-zinc-600"
+                           oninput="applyOutboundFilter()">
+                </div>
+
+                <!-- PILLS DE FILTRO RÁPIDO -->
+                <div class="flex flex-wrap gap-1.5 mb-4">
+                    <button onclick="setOutboundTag('')" id="pill-all" class="filter-pill active px-3 py-1 text-[11px] font-mono rounded-md border border-zinc-800 text-zinc-400 hover:text-white">Todos</button>
+                    <button onclick="setOutboundTag('chromium')" id="pill-chromium" class="filter-pill px-3 py-1 text-[11px] font-mono rounded-md bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white">🌐 Chromium</button>
+                    <button onclick="setOutboundTag('steam')" id="pill-steam" class="filter-pill px-3 py-1 text-[11px] font-mono rounded-md bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white">🎮 Steam</button>
+                    <button onclick="setOutboundTag('agy')" id="pill-agy" class="filter-pill px-3 py-1 text-[11px] font-mono rounded-md bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white">⚡ AI Link</button>
+                    <button onclick="setOutboundTag('cdn77')" id="pill-cdn77" class="filter-pill px-3 py-1 text-[11px] font-mono rounded-md bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white">📼 CDN77</button>
+                    <button onclick="setOutboundTag('google')" id="pill-google" class="filter-pill px-3 py-1 text-[11px] font-mono rounded-md bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white">🏢 Google</button>
+                </div>
+
+                <!-- LISTA DE PROCESSOS -->
+                <div id="process-list" class="space-y-2 max-h-[460px] overflow-y-auto pr-1">
+                    <p class="text-zinc-600 text-xs font-mono italic py-4 text-center">Aguardando telemetria de processos...</p>
                 </div>
             </div>
 
-            <!-- PURGATÓRIO DIGITAL (BLOQUEIOS ATIVOS & FORM MANUAL) -->
-            <div>
-                <div class="flex justify-between items-center mb-4">
-                    <div>
+            <!-- PURGATÓRIO DIGITAL (1 COLUNA DE LARGURA) -->
+            <div class="card-vault p-5 rounded-xl border border-red-950/60 flex flex-col justify-between">
+                <div>
+                    <div class="mb-4">
                         <h2 class="text-sm font-black text-red-500 font-mono tracking-wider uppercase flex items-center gap-2">
-                            <span>💀</span> Digital Purgatory // Sentenças Netfilter
+                            <span>💀</span> Digital Purgatory
                         </h2>
-                        <p class="text-zinc-500 text-[11px] font-mono">IPs descartados imediatamente em nível de kernel (DROP).</p>
+                        <p class="text-zinc-500 text-[11px] font-mono mt-0.5">IPs descartados em nível de kernel (DROP).</p>
+                    </div>
+
+                    <!-- Formulário de Bloqueio Manual -->
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="manual-ip-input" placeholder="Ex: 198.51.100.23" class="flex-1 bg-zinc-950 border border-zinc-800 p-2.5 text-xs text-white outline-none focus:border-red-500 font-mono rounded-lg">
+                        <button onclick="handleManualBlock()" class="bg-red-700 hover:bg-red-600 text-white text-xs font-mono font-bold px-3.5 py-2.5 rounded-lg transition uppercase">Banir</button>
+                    </div>
+
+                    <!-- Lista de Bloqueios -->
+                    <div id="blocked-container" class="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+                        <p class="text-zinc-600 text-xs font-mono italic py-4 text-center">Nenhum IP no purgatório.</p>
                     </div>
                 </div>
 
-                <!-- Formulário de Bloqueio Manual -->
-                <div class="flex gap-2 mb-4">
-                    <input type="text" id="manual-ip-input" placeholder="Ex: 198.51.100.23" class="flex-1 bg-zinc-950 border border-zinc-800 p-2.5 text-xs text-white outline-none focus:border-red-500 font-mono rounded">
-                    <button onclick="handleManualBlock()" class="bg-red-700 hover:bg-red-600 text-white text-xs font-mono font-bold px-4 py-2.5 rounded transition uppercase">Banir IP</button>
-                </div>
-
-                <!-- Lista de Bloqueios -->
-                <div id="blocked-container" class="space-y-2 max-h-[345px] overflow-y-auto pr-1">
-                    <p class="text-zinc-600 text-xs font-mono italic">Nenhum IP no purgatório.</p>
+                <div class="pt-4 border-t border-zinc-800 text-[11px] font-mono text-zinc-500 text-center">
+                    Sentenças aplicadas no topo da cadeia Netfilter
                 </div>
             </div>
 
@@ -180,10 +212,13 @@
 
     </div>
 
-    <!-- JAVASCRIPT DE TELEMETRIA -->
+    <!-- JAVASCRIPT DE TELEMETRIA E CONTROLE -->
     <script>
         let chart = null;
         let token = localStorage.getItem('shield_token');
+        let cachedOutboundConns = [];
+        let cachedTrappedIntruders = [];
+        let currentOutboundTag = '';
 
         async function checkSetup() {
             try {
@@ -273,97 +308,188 @@
                     aiBadge.className = 'bg-zinc-900 border border-emerald-700/60 text-emerald-400 px-3 py-1.5 rounded text-xs font-mono font-bold uppercase flex items-center gap-2';
                 }
 
-                // 3. Renderiza Invasores da Armadilha Silenciosa
-                renderTrappedIntruders(data.trapped_intruders || []);
+                // Salva cache de dados para busca instantânea sem piscar tela
+                cachedTrappedIntruders = data.trapped_intruders || [];
+                cachedOutboundConns = data.outbound_conns || [];
 
-                // 4. Renderiza Processos Conectados (Outbound)
-                renderOutboundProcesses(data.outbound_conns || []);
+                // 3. Renderiza listas aplicando filtros ativos
+                applyTrapFilter();
+                applyOutboundFilter();
 
-                // 5. Renderiza Purgatório (Bloqueios)
+                // 4. Renderiza Purgatório (Bloqueios)
                 renderBlockedIPs(data.blocked_ips || []);
 
-                // 6. Atualiza Gráfico
+                // 5. Atualiza Gráfico
                 updateChart(data.times, data.packets);
 
             } catch(e) {}
         }
 
+        // ==========================================
+        // FILTROS & LUPA DA ARMADILHA SILENCIOSA
+        // ==========================================
+        function applyTrapFilter() {
+            const query = (document.getElementById('trap-search')?.value || '').toLowerCase().trim();
+            const filtered = cachedTrappedIntruders.filter(i => {
+                if(!query) return true;
+                return (i.ip && i.ip.toLowerCase().includes(query)) ||
+                       (i.country && i.country.toLowerCase().includes(query)) ||
+                       (i.org && i.org.toLowerCase().includes(query)) ||
+                       (i.scanner_name && i.scanner_name.toLowerCase().includes(query)) ||
+                       (i.os_family && i.os_family.toLowerCase().includes(query)) ||
+                       (i.target_port && String(i.target_port).includes(query));
+            });
+
+            document.getElementById('trap-count-badge').innerText = `${filtered.length} de ${cachedTrappedIntruders.length} invasores`;
+            renderTrappedIntruders(filtered);
+        }
+
         function renderTrappedIntruders(intruders) {
             const container = document.getElementById('trap-container');
             if(!intruders || intruders.length === 0) {
-                container.innerHTML = '<p class="text-zinc-600 text-xs font-mono italic col-span-full py-8 text-center">Nenhum invasor detectado na armadilha no momento. O perímetro está seguro.</p>';
+                container.innerHTML = '<p class="text-zinc-600 text-xs font-mono italic col-span-full py-8 text-center">Nenhum invasor correspondente encontrado na armadilha.</p>';
                 return;
             }
 
             container.innerHTML = intruders.map(i => {
                 const isBlocked = i.is_blocked;
-                const badgeColor = i.is_scanner ? 'bg-red-950/80 text-red-400 border-red-700' : 'bg-purple-950/80 text-purple-400 border-purple-700';
+                const badgeColor = i.is_scanner ? 'bg-red-950/90 text-red-400 border-red-700' : 'bg-purple-950/90 text-purple-400 border-purple-700';
                 
                 return `
-                <div class="trap-card p-4 rounded-lg flex flex-col justify-between">
+                <div class="trap-card p-4 rounded-xl flex flex-col justify-between">
                     <div>
-                        <div class="flex justify-between items-start mb-2">
+                        <div class="flex justify-between items-start mb-2.5">
                             <div class="flex items-center gap-2">
-                                <span class="text-xs font-mono font-bold text-white bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800">${i.ip}</span>
-                                <span class="text-[10px] font-mono text-zinc-400">${i.country || 'N/A'}</span>
+                                <span class="text-xs font-mono font-bold text-white bg-zinc-950 px-2.5 py-1 rounded border border-zinc-800">${i.ip}</span>
+                                <span class="text-[10px] font-mono text-zinc-400 bg-zinc-900/80 px-2 py-0.5 rounded border border-zinc-800">${i.country || 'N/A'}</span>
                             </div>
                             <span class="text-[9px] font-mono uppercase px-2 py-0.5 rounded border ${badgeColor}">
                                 ${i.scanner_name || i.os_family}
                             </span>
                         </div>
                         
-                        <div class="text-[11px] font-mono text-zinc-300 mb-1">
-                            <span class="text-purple-400 font-bold">Porta Alvo:</span> ${i.target_port} <span class="text-zinc-500">(${i.port_desc})</span>
+                        <div class="text-[12px] font-mono text-zinc-200 mb-1.5">
+                            <span class="text-purple-400 font-bold">Porta Alvo:</span> ${i.target_port} <span class="text-zinc-500 font-normal">(${i.port_desc})</span>
                         </div>
 
-                        <div class="text-[11px] font-mono text-zinc-400 mb-1">
-                            <span class="text-zinc-500">Provedor:</span> ${i.org || 'Buscando BGP...'}
+                        <div class="text-[11px] font-mono text-zinc-400 mb-1.5">
+                            <span class="text-zinc-500">Provedor:</span> <span class="text-zinc-300 font-bold">${i.org || 'Buscando BGP...'}</span>
                         </div>
 
-                        <div class="text-[10px] font-mono text-zinc-500 mb-3">
-                            <span class="text-zinc-600">Assinatura:</span> ${i.signature || 'P0F/Raw'} | <span class="text-zinc-400">${i.formatted_time}</span>
+                        <div class="text-[10px] font-mono text-zinc-500 mb-3 bg-zinc-950/60 p-2 rounded border border-zinc-900">
+                            <div><span class="text-zinc-600">Assinatura:</span> ${i.signature || 'P0F/Raw'}</div>
+                            <div><span class="text-zinc-600">Capturado às:</span> <span class="text-zinc-400 font-bold">${i.formatted_time}</span></div>
                         </div>
                     </div>
 
-                    <div class="pt-2 border-t border-purple-950/60 flex justify-between items-center">
-                        <span class="text-[10px] font-mono text-emerald-400">Capturado Silenciosamente</span>
+                    <div class="pt-2.5 border-t border-purple-950/70 flex justify-between items-center">
+                        <span class="text-[10px] font-mono text-purple-400 flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span> Desmascarado
+                        </span>
                         ${isBlocked ? 
-                            `<button onclick="unblockIP('${i.ip}')" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-mono font-bold px-2.5 py-1 rounded transition uppercase">Liberar</button>` :
-                            `<button onclick="blockIP('${i.ip}')" class="bg-red-900/80 hover:bg-red-800 text-red-200 text-[10px] font-mono font-bold px-2.5 py-1 rounded transition border border-red-700 uppercase">Purgar IP</button>`
+                            `<button onclick="unblockIP('${i.ip}')" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-mono font-bold px-3 py-1.5 rounded transition uppercase">Liberar</button>` :
+                            `<button onclick="blockIP('${i.ip}')" class="bg-red-900/90 hover:bg-red-800 text-red-100 text-[10px] font-mono font-bold px-3 py-1.5 rounded transition border border-red-700 uppercase shadow-lg shadow-red-950/50">💀 Purgar IP</button>`
                         }
                     </div>
                 </div>`;
             }).join('');
         }
 
+        // ==========================================
+        // FILTROS & LUPA DA OUTBOUND MATRIX (PROCESSOS)
+        // ==========================================
+        function setOutboundTag(tag) {
+            currentOutboundTag = tag.toLowerCase();
+            document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.remove('active'));
+            if(!tag) document.getElementById('pill-all')?.classList.add('active');
+            else if(tag === 'chromium') document.getElementById('pill-chromium')?.classList.add('active');
+            else if(tag === 'steam') document.getElementById('pill-steam')?.classList.add('active');
+            else if(tag === 'agy') document.getElementById('pill-agy')?.classList.add('active');
+            else if(tag === 'cdn77') document.getElementById('pill-cdn77')?.classList.add('active');
+            else if(tag === 'google') document.getElementById('pill-google')?.classList.add('active');
+            applyOutboundFilter();
+        }
+
+        function applyOutboundFilter() {
+            const query = (document.getElementById('outbound-search')?.value || '').toLowerCase().trim();
+            const tag = currentOutboundTag;
+
+            const filtered = cachedOutboundConns.filter(c => {
+                const proc = (c.process || '').toLowerCase();
+                const remote = (c.remote || '').toLowerCase();
+                const org = (c.org || '').toLowerCase();
+                const pid = String(c.pid || '');
+
+                if(tag && !proc.includes(tag) && !org.includes(tag)) {
+                    return false;
+                }
+
+                if(!query) return true;
+                return proc.includes(query) || remote.includes(query) || org.includes(query) || pid.includes(query);
+            });
+
+            document.getElementById('outbound-counter').innerText = `${filtered.length} de ${cachedOutboundConns.length} conexões`;
+            renderOutboundProcesses(filtered);
+        }
+
         function renderOutboundProcesses(conns) {
             const container = document.getElementById('process-list');
             if(!conns || conns.length === 0) {
-                container.innerHTML = '<p class="text-zinc-600 text-xs font-mono italic">Nenhum socket externo ativo.</p>';
+                container.innerHTML = '<p class="text-zinc-600 text-xs font-mono italic py-4 text-center">Nenhum processo correspondente encontrado com esse filtro.</p>';
                 return;
             }
 
-            container.innerHTML = conns.map(c => `
-                <div class="card-vault p-3 rounded flex items-center justify-between text-xs font-mono">
-                    <div class="flex items-center gap-3">
-                        <span class="text-emerald-400 font-bold bg-zinc-950 px-2 py-1 rounded border border-zinc-800">${c.process}</span>
-                        <div>
-                            <span class="text-zinc-300">${c.remote}</span>
-                            <span class="text-zinc-500 text-[10px] block">${c.org ? '[' + c.org + ']' : ''}</span>
+            container.innerHTML = conns.map(c => {
+                const procLower = (c.process || '').toLowerCase();
+                let badgeStyle = 'bg-zinc-900 border-zinc-800 text-zinc-300';
+                let icon = '📦';
+
+                if(procLower.includes('chromium') || procLower.includes('chrome') || procLower.includes('firefox')) {
+                    badgeStyle = 'bg-blue-950/70 border-blue-800/80 text-blue-300';
+                    icon = '🌐';
+                } else if(procLower.includes('steam')) {
+                    badgeStyle = 'bg-indigo-950/70 border-indigo-800/80 text-indigo-300';
+                    icon = '🎮';
+                } else if(procLower.includes('agy') || procLower.includes('antigravity')) {
+                    badgeStyle = 'bg-purple-950/70 border-purple-800/80 text-purple-300';
+                    icon = '⚡';
+                } else if(procLower.includes('vesktop') || procLower.includes('discord')) {
+                    badgeStyle = 'bg-sky-950/70 border-sky-800/80 text-sky-300';
+                    icon = '💬';
+                }
+
+                const orgBadge = c.org ? 
+                    `<span class="bg-zinc-900 text-purple-400 font-bold px-2 py-0.5 rounded text-[10px] border border-purple-950">${c.org}</span>` : 
+                    `<span class="text-zinc-600 text-[10px]">Identificando...</span>`;
+
+                return `
+                <div class="outbound-row p-3 rounded-xl flex items-center justify-between text-xs font-mono gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="px-2.5 py-1 rounded-lg border text-xs font-bold flex items-center gap-1.5 ${badgeStyle} shrink-0">
+                            <span>${icon}</span>
+                            <span>${c.process}</span>
+                            <span class="text-[10px] opacity-60 font-normal">#${c.pid || '-'}</span>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="text-white font-bold tracking-tight">${c.remote}</span>
+                                ${orgBadge}
+                            </div>
+                            <span class="text-zinc-500 text-[10px] block mt-0.5">Socket local: ${c.local}</span>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <span class="text-[10px] text-zinc-500 uppercase">${c.proto} ${c.state}</span>
-                        <button onclick="blockIP('${c.remote_ip}')" title="Bloquear IP Remoto" class="text-zinc-600 hover:text-red-400 text-xs font-bold px-2 py-1 transition">🚫</button>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="text-[10px] text-zinc-500 font-mono uppercase bg-zinc-950 px-2 py-0.5 rounded border border-zinc-900">${c.proto} ${c.state}</span>
+                        <button onclick="blockIP('${c.remote_ip}')" title="Bloquear IP Remoto no Netfilter" class="bg-red-950/60 hover:bg-red-900 text-red-400 hover:text-white px-2.5 py-1 rounded border border-red-900/60 transition text-xs font-bold">🚫</button>
                     </div>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
         }
 
         function renderBlockedIPs(blockedList) {
             const container = document.getElementById('blocked-container');
             if(!blockedList || blockedList.length === 0) {
-                container.innerHTML = '<p class="text-zinc-600 text-xs font-mono italic">Nenhum IP no purgatório.</p>';
+                container.innerHTML = '<p class="text-zinc-600 text-xs font-mono italic py-4 text-center">Nenhum IP no purgatório.</p>';
                 return;
             }
 
@@ -371,12 +497,12 @@
                 const ip = typeof item === 'object' ? item.ip : item;
                 const company = typeof item === 'object' ? item.company : 'Bloqueado';
                 return `
-                <div class="card-vault border-l-2 border-l-red-500 p-3 rounded flex items-center justify-between text-xs font-mono">
-                    <div>
+                <div class="card-vault border-l-4 border-l-red-500 p-3 rounded-lg flex items-center justify-between text-xs font-mono">
+                    <div class="min-w-0">
                         <span class="font-bold text-red-400">${ip}</span>
-                        <span class="text-zinc-500 text-[10px] block">${company}</span>
+                        <span class="text-zinc-500 text-[10px] block truncate">${company}</span>
                     </div>
-                    <button onclick="unblockIP('${ip}')" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-mono px-3 py-1 rounded transition uppercase">Desbloquear</button>
+                    <button onclick="unblockIP('${ip}')" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-mono px-3 py-1 rounded transition uppercase shrink-0">Liberar</button>
                 </div>`;
             }).join('');
         }
