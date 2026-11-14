@@ -152,6 +152,16 @@ impl DnsSniffer {
             return;
         }
 
+        // Inspeção de Contrainteligência: Detecção de DNS Tunneling e Exfiltração Furtiva
+        if let Some(covert) = archshield_core::analyze_dns_query(&first_qname) {
+            tokio::spawn({
+                let state = Arc::clone(state);
+                async move {
+                    state.write().await.record_covert_alert(covert);
+                }
+            });
+        }
+
         for _ in 0..ancount {
             if offset >= payload.len() {
                 break;

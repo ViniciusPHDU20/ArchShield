@@ -51,7 +51,7 @@ fn print_banner() {
  ██╔══██║██╔══██╗██║     ██╔══██║╚════██║██╔══██║██║██╔══╝  ██║     ██║  ██║
  ██║  ██║██║  ██║╚██████╗██║  ██║███████║██║  ██║██║███████╗███████╗██████╔╝
  ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝╚══════╝╚══════╝╚═════╝ 
-            -- SOVEREIGN CONTROLLER (0-PORT UNIX IPC) --
+        -- SOVEREIGN INTELLIGENCE & RING-0 SENTRY (0-PORT UNIX IPC) --
     "#);
     println!("\x1b[0m");
 }
@@ -61,8 +61,31 @@ fn render_status(status: &SystemStatus) {
     println!(" 🛡️  \x1b[1;37mESTADO DO SISTEMA:\x1b[0m \x1b[1;32m{}\x1b[0m", status.ia_status);
     println!(" 📦 \x1b[1;33mPacotes Analisados:\x1b[0m {}  |  🕸️  \x1b[1;31mArmadilha Capturados:\x1b[0m {}  |  💀 \x1b[1;31mBloqueados:\x1b[0m {}", 
         status.total_packets, status.trapped_count, status.blocked_count);
-    println!(" 🌐 \x1b[1;36mConexões Ativas Outbound:\x1b[0m {}", status.outbound_count);
+    println!(" 🌐 \x1b[1;36mConexões Ativas Outbound:\x1b[0m {}  |  🔬 \x1b[1;35mIntegridade Ring 0:\x1b[0m {}", 
+        status.outbound_count, if status.kernel_integrity.is_clean { "\x1b[1;32m✓ LIMPO\x1b[0m" } else { "\x1b[1;31m⚠️ COMPROMISSO\x1b[0m" });
     println!("\x1b[1;32m══════════════════════════════════════════════════════════════════════════════\x1b[0m\n");
+
+    // ALERTA DE KERNEL ROOTKIT SE HOUVER
+    if !status.kernel_integrity.is_clean {
+        println!("\x1b[1;41;37m ⚠️ ALERTA DE ANOMALIA EM RING 0 // KERNEL COMPROMISE DETECTED: \x1b[0m");
+        for m in &status.kernel_integrity.hidden_lkm_modules {
+            println!("   \x1b[1;31m[LKM ROOTKIT OCULTO]:\x1b[0m Módulo '{}' desvinculado de /proc/modules!", m);
+        }
+        for p in &status.kernel_integrity.hidden_pids {
+            println!("   \x1b[1;31m[PROCESSO FANTASMA (DKOM)]:\x1b[0m PID {} oculto do VFS /proc!", p);
+        }
+        println!();
+    }
+
+    // CANAIS ENCOBERTOS (COVERT CHANNELS)
+    if !status.covert_alerts.is_empty() {
+        println!("\x1b[1;33m🕵️ CANAIS ENCOBERTOS & EXFILTRAÇÃO FURTIVA DETECTADOS:\x1b[0m");
+        for c in status.covert_alerts.iter().take(4) {
+            println!("   [{}] \x1b[1;33m{}\x1b[0m | Alvo: \x1b[1;37m{}\x1b[0m | Entropia: {:.2} ({})",
+                c.formatted_time, c.channel_type, c.indicator, c.entropy, c.confidence);
+        }
+        println!();
+    }
 
     println!("\x1b[1;31m🚨 ÚLTIMOS INTRUSOS CAPTURADOS NA ARMADILHA (SILENT BLACKHOLE):\x1b[0m");
     if status.trapped_intruders.is_empty() {
@@ -125,9 +148,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 other => println!("{:?}", other),
             }
         }
+        "audit" => {
+            print_banner();
+            println!("\x1b[1;35m🔬 EXECUTANDO AUDITORIA PROFUNDA DE RING 0 & ROOTKITS DE KERNEL...\x1b[0m\n");
+            match send_command(&IpcCommand::RunKernelAudit).await? {
+                IpcResponse::KernelAudit(report) => {
+                    println!(" Timestamp da Auditoria: {}", report.formatted_time);
+                    println!(" Diagnóstico: \x1b[1;32m{}\x1b[0m\n", report.summary);
+                    if report.is_clean {
+                        println!(" \x1b[1;32m[✓]\x1b[0m Nenhum Loadable Kernel Module (LKM) desvinculado ou oculto.");
+                        println!(" \x1b[1;32m[✓]\x1b[0m Nenhum processo fantasma evadindo o VFS /proc (Zero DKOM).");
+                        println!(" \x1b[1;32m[✓]\x1b[0m Tabela de processos e módulos sincronizados com o escalonador do kernel.");
+                    } else {
+                        for m in &report.hidden_lkm_modules {
+                            println!(" \x1b[1;31m[!]\x1b[0m Módulo de Kernel Oculto Detectado: {}", m);
+                        }
+                        for p in &report.hidden_pids {
+                            println!(" \x1b[1;31m[!]\x1b[0m PID Fantasma Oculto via DKOM: {}", p);
+                        }
+                    }
+                }
+                other => println!("{:?}", other),
+            }
+        }
         "watch" => {
             loop {
-                // Limpa terminal
                 print!("\x1b[2J\x1b[1;1H");
                 print_banner();
                 match send_command(&IpcCommand::GetStatus).await {
@@ -153,7 +198,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             let ip = args[2].clone();
             match send_command(&IpcCommand::BlockIp { ip: ip.clone() }).await? {
-                IpcResponse::Ack => println!("\x1b[1;32m✅ IP {} bloqueado com sucesso no Netfilter!\x1b[0m", ip),
+                IpcResponse::Ack => println!("\x1b[1;32m✅ IP {} bloqueado com sucesso no Netfilter O(1) Set!\x1b[0m", ip),
                 IpcResponse::Error(e) => eprintln!("\x1b[1;31m❌ Falha ao bloquear {}: {}\x1b[0m", ip, e),
                 other => println!("{:?}", other),
             }
@@ -172,7 +217,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         "clear" => {
             match send_command(&IpcCommand::ClearTrap).await? {
-                IpcResponse::Ack => println!("\x1b[1;32m🧹 Histórico de armadilha limpo!\x1b[0m"),
+                IpcResponse::Ack => println!("\x1b[1;32m🧹 Histórico de armadilha e canais encobertos limpo!\x1b[0m"),
                 other => println!("{:?}", other),
             }
         }
@@ -183,7 +228,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         _ => {
-            eprintln!("Uso: archshield-ctl [status|watch|json|block <ip>|unblock <ip>|clear|ping]");
+            eprintln!("Uso: archshield-ctl [status|watch|audit|json|block <ip>|unblock <ip>|clear|ping]");
         }
     }
 

@@ -99,6 +99,11 @@ impl IpcServer {
                     IpcResponse::Error(format!("Falha ao desbloquear IP {}", ip))
                 }
             }
+            IpcCommand::RunKernelAudit => {
+                let report = archshield_core::RootkitHunter::audit();
+                state.write().await.update_kernel_report(report.clone());
+                IpcResponse::KernelAudit(report)
+            }
             IpcCommand::GetStatus => {
                 let mut conns = ProcessTracker::get_active_connections();
                 let blocked = FirewallManager::get_active_blocks();

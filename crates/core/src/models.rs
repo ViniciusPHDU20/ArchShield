@@ -1,4 +1,6 @@
 // language: Rust, file: crates/core/src/models.rs, runtime: pure-rust, target: Linux
+use crate::covert::CovertAlert;
+use crate::rootkit_hunter::KernelIntegrityReport;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -49,6 +51,8 @@ pub struct SystemStatus {
     pub blocked_ips: Vec<String>,
     pub traffic_history: Vec<u64>,
     pub time_history: Vec<String>,
+    pub kernel_integrity: KernelIntegrityReport,
+    pub covert_alerts: Vec<CovertAlert>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -58,6 +62,7 @@ pub enum IpcCommand {
     BlockIp { ip: String },
     UnblockIp { ip: String },
     ClearTrap,
+    RunKernelAudit,
     Ping,
 }
 
@@ -66,6 +71,7 @@ pub enum IpcCommand {
 pub enum IpcResponse {
     Success(serde_json::Value),
     Status(SystemStatus),
+    KernelAudit(KernelIntegrityReport),
     Ack,
     Pong,
     Error(String),

@@ -80,6 +80,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
+    // 5. Sentinela de Ring 0: Auditoria Periódica de Integridade do Kernel & Rootkits (a cada 10s)
+    let audit_state = Arc::clone(&state);
+    tokio::spawn(async move {
+        let mut audit_interval = tokio::time::interval(Duration::from_secs(10));
+        loop {
+            audit_interval.tick().await;
+            let report = archshield_core::RootkitHunter::audit();
+            audit_state.write().await.update_kernel_report(report);
+        }
+    });
+
     info!("🚀 [DAEMON-ONLINE] ArchShield Sovereign Daemon operacional com sucesso!");
 
     // Aguarda sinal de terminação (Ctrl+C ou SIGTERM)

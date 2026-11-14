@@ -314,13 +314,16 @@
                 <p class="text-zinc-500 text-xs mt-1 font-mono">Perímetro Soberano // Armadilha Silenciosa & Matriz de Processos</p>
             </div>
             <div class="flex flex-wrap items-center gap-3">
+                <div id="kernel-badge" class="bg-zinc-900 border text-purple-300 px-3 py-1.5 rounded text-xs font-mono font-bold uppercase flex items-center gap-2">
+                    <span class="inline-block w-2 h-2 rounded-full bg-purple-500"></span> RING 0: LIMPO
+                </div>
                 <div id="ai-badge" class="bg-zinc-900 border text-emerald-400 px-3 py-1.5 rounded text-xs font-mono font-bold uppercase flex items-center gap-2">
                     <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span> RUST 0-PORT // ARMED
                 </div>
                 <div class="bg-zinc-900 border text-purple-400 px-3 py-1.5 rounded text-xs font-mono font-bold uppercase flex items-center gap-2">
                     <span class="inline-block w-2 h-2 rounded-full bg-purple-500"></span> Armadilha Ativa
                 </div>
-                <button onclick="clearTrap()" class="bg-zinc-900 border text-zinc-400 hover:text-white px-3 py-1.5 rounded text-xs font-mono font-bold transition uppercase">Limpar Armadilha</button>
+                <button onclick="clearTrap()" class="bg-zinc-900 border text-zinc-400 hover:text-white px-3 py-1.5 rounded text-xs font-mono font-bold transition uppercase">Limpar Registro</button>
             </div>
         </header>
 
@@ -476,6 +479,17 @@
             const aiBadge = document.getElementById('ai-badge');
             if(aiBadge) {
                 aiBadge.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span> RUST 0-PORT // ARMED';
+            }
+
+            const kernelBadge = document.getElementById('kernel-badge');
+            if(kernelBadge && data.kernel_integrity) {
+                if(data.kernel_integrity.is_clean) {
+                    kernelBadge.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span> RING 0: LIMPO';
+                    kernelBadge.className = 'bg-zinc-900 border text-emerald-400 px-3 py-1.5 rounded text-xs font-mono font-bold uppercase flex items-center gap-2';
+                } else {
+                    kernelBadge.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> ⚠️ RING 0: ANOMALIA';
+                    kernelBadge.className = 'bg-red-950 border border-red-700 text-red-400 px-3 py-1.5 rounded text-xs font-mono font-bold uppercase flex items-center gap-2';
+                }
             }
 
             cachedTrappedIntruders = data.trapped_intruders || [];

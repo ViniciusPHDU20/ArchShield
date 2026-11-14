@@ -15,6 +15,7 @@ dependencies = [
 name = "archshield-core"
 version = "2.1.0"
 dependencies = [
+ "libc",
  "serde",
  "serde_json",
 ]

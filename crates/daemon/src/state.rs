@@ -1,5 +1,7 @@
 // language: Rust, file: crates/daemon/src/state.rs, runtime: tokio, target: Linux
-use archshield_core::{ConnectionInfo, IntruderEvent, SystemStatus};
+use archshield_core::{
+    ConnectionInfo, CovertAlert, IntruderEvent, KernelIntegrityReport, RootkitHunter, SystemStatus,
+};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -13,10 +15,14 @@ pub struct SystemState {
     pub traffic_history: Vec<u64>,
     pub time_history: Vec<String>,
     pub current_second_packets: AtomicU64,
+    pub covert_alerts: Vec<CovertAlert>,
+    pub kernel_report: KernelIntegrityReport,
 }
 
 impl SystemState {
     pub fn new() -> Self {
+        let initial_kernel_report = RootkitHunter::audit();
+
         Self {
             total_packets: AtomicU64::new(0),
             trapped_intruders: Vec::new(),
@@ -25,6 +31,8 @@ impl SystemState {
             traffic_history: vec![0; 20],
             time_history: vec!["--:--:--".to_string(); 20],
             current_second_packets: AtomicU64::new(0),
+            covert_alerts: Vec::new(),
+            kernel_report: initial_kernel_report,
         }
     }
 
@@ -34,7 +42,6 @@ impl SystemState {
     }
 
     pub fn record_intruder(&mut self, mut intruder: IntruderEvent) {
-        // Evita duplicatas consecutivas nos últimos 2 segundos do mesmo IP e porta
         if let Some(last) = self.trapped_intruders.first() {
             if last.ip == intruder.ip
                 && last.target_port == intruder.target_port
@@ -44,7 +51,6 @@ impl SystemState {
             }
         }
 
-        // Tenta enriquecer com ASN/Org do cache ou prefixo se disponível
         if intruder.org.is_empty() {
             intruder.org = self.get_org_for_ip(&intruder.ip);
         }
@@ -53,6 +59,26 @@ impl SystemState {
         if self.trapped_intruders.len() > 500 {
             self.trapped_intruders.truncate(500);
         }
+    }
+
+    pub fn record_covert_alert(&mut self, alert: CovertAlert) {
+        // Evita duplicatas consecutivas nos últimos 3 segundos
+        if let Some(last) = self.covert_alerts.first() {
+            if last.indicator == alert.indicator
+                && alert.timestamp.saturating_sub(last.timestamp) < 3
+            {
+                return;
+            }
+        }
+
+        self.covert_alerts.insert(0, alert);
+        if self.covert_alerts.len() > 100 {
+            self.covert_alerts.truncate(100);
+        }
+    }
+
+    pub fn update_kernel_report(&mut self, report: KernelIntegrityReport) {
+        self.kernel_report = report;
     }
 
     pub fn associate_ip_domain(&mut self, ip: String, domain: String) {
@@ -76,7 +102,6 @@ impl SystemState {
             return cached.clone();
         }
 
-        // Heurísticas instantâneas de prefixos de rede conhecidos
         if ip.starts_with("2001:4860:")
             || ip.starts_with("142.250.")
             || ip.starts_with("172.217.")
@@ -157,6 +182,7 @@ impl SystemState {
 
     pub fn clear_trapped(&mut self) {
         self.trapped_intruders.clear();
+        self.covert_alerts.clear();
     }
 
     pub fn tick_second(&mut self) {
@@ -184,17 +210,25 @@ impl SystemState {
         let blocked_count = blocked_ips.len();
         let outbound_count = active_conns.len();
 
+        let ia_status = if self.kernel_report.is_clean {
+            "ARMED // RING 0 VERIFIED // SOVEREIGN ENGINE ACTIVE (RUST)".to_string()
+        } else {
+            format!("⚠️ ALERTA DE KERNEL // {} ROOTKITS/PROCESSOS FANTASMAS DETECTADOS", self.kernel_report.hidden_lkm_modules.len() + self.kernel_report.hidden_pids.len())
+        };
+
         SystemStatus {
             total_packets: total,
             trapped_count,
             blocked_count,
             outbound_count,
-            ia_status: "ARMED // SOVEREIGN ENGINE ACTIVE (RUST)".to_string(),
+            ia_status,
             trapped_intruders: self.trapped_intruders.clone(),
             outbound_conns: active_conns,
             blocked_ips,
             traffic_history: self.traffic_history.clone(),
             time_history: self.time_history.clone(),
+            kernel_integrity: self.kernel_report.clone(),
+            covert_alerts: self.covert_alerts.clone(),
         }
     }
 }

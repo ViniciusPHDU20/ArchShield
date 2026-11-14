@@ -179,6 +179,16 @@ impl PacketSniffer {
                     // UDP telemetry hooks
                 }
             }
+            IpNextHeaderProtocols::Icmp | IpNextHeaderProtocols::Icmpv6 => {
+                if let Some(covert) = archshield_core::analyze_icmp_payload(payload, src, dst) {
+                    tokio::spawn({
+                        let state = Arc::clone(state);
+                        async move {
+                            state.write().await.record_covert_alert(covert);
+                        }
+                    });
+                }
+            }
             _ => {}
         }
     }
